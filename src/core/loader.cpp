@@ -5,42 +5,28 @@
 #include <iostream>
 #include <map>
 #include <fstream>
-#include <memory>
 #include <string>
 #include <vector>
-#include <sstream>
+#include "util/util.hpp"
 
 #include "database.hpp"
 #include "block.hpp"
 #include "address.hpp"
 
-BCDatabase db;
-
 typedef std::vector<std::string> Trace;
 
-std::map<std::string, std::unique_ptr<BCBlock>> dictionary;
+Trace build_chains(BCDatabase& db, const std::vector<BCAddr>& raw) {
 
-std::string to_hex(BCAddr val) {
-    std::stringstream ss;
-    ss << std::hex << val;
-    return ss.str();
-}
-
-Trace build_chains(
-    const std::vector<BCAddr>& raw,
-    std::map<BCAddr, std::map<BCAddr, int>>& next_map,
-    std::map<BCAddr, std::map<BCAddr, int>>& prev_map
-) {
     for (size_t i=0;i<raw.size()-1;i++) {
-        next_map[raw[i]][raw[i+1]]++;
-        prev_map[raw[i+1]][raw[i]]++;
+        db.next_map[raw[i]][raw[i+1]]++;
+        db.prev_map[raw[i+1]][raw[i]]++;
     }
 
     std::map<BCAddr, BCAddr> glue;
-    for (auto const& [src, targets] : next_map) {
+    for (auto const& [src, targets] : db.next_map) {
         if (targets.size() == 1) {
             BCAddr dst = targets.begin()->first;
-            if (prev_map[dst].size() == 1) glue[src] = dst;
+            if (db.prev_map[dst].size() == 1) glue[src] = dst;
         }
     }
 
@@ -55,14 +41,14 @@ Trace build_chains(
     for (auto const& [src, dst] : glue) {
         if (!has_incoming_glue[src]) {
             std::string name = "BLK_" + std::to_string(blk_id);
-            std::vector<std::string> members;
+            std::vector<BCAddr> members;
             BCAddr curr = src;
 
             while (glue.count(curr)) {
-                members.push_back(to_hex(curr));
+                members.push_back(curr);
                 curr = glue[curr];
             }
-            members.push_back(to_hex(curr));
+            members.push_back(curr);
 
             blk_starts[src] = name;
 
@@ -104,48 +90,23 @@ Trace build_chains(
     return trace;
 }
 
-std::vector<BCBlock> load_blocks() {
+BCDatabase load_database(const std::string& path) {
 
     std::vector<BCAddr> raw_data;
-    std::ifstream f("functions.bin", std::ios::binary);
+    std::ifstream f(path, std::ios::binary);
     BCAddr a; while(f.read((char*)&a, sizeof(BCAddr))) raw_data.push_back(a);
-    std::cout << "Start: " << raw_data.size() << " addrs\n";
+    std::cout << "Start: " << raw_data.size() << " addrs" << std::endl;
 
-    std::map<BCAddr, std::map<BCAddr, int>> next_map, prev_map;
+    BCDatabase db;
     
-    Trace t1 = build_chains(raw_data, next_map, prev_map);
+    Trace t1 = build_chains(db, raw_data);
 
     std::cout
         << "Analysis done with " << db.blocks.size() << " unique addrs and "
-        << t1.size() << " lines of trace. Saving...\n";
+        << t1.size() << " lines of trace. Saving..." << std::endl;
 
-    for (auto const& [id, block] : db.blocks) {
-
-        BCAddr first = block->first_loc();
-        BCAddr last = block->last_loc();
-
-        std::map<BCAddr, int> nexts = next_map[last];
-        std::map<BCAddr, int> prevs = prev_map[first];
-
-        for (auto const& [next, count] : nexts) {
-            for (auto const& [other_id, other_block] : db.blocks) {
-                if (next == other_block->first_loc() && id != other_id) {
-                    block->nexts[other_id] = count;
-                }
-            }
-        }
-
-        for (auto const& [prev, count] : prevs) {
-            for (auto const& [other_id, other_block] : db.blocks) {
-                if (prev == other_block->first_loc() && id != other_id) {
-                    block->prevs[other_id] = count;
-                }
-            }
-        }
-        
-        // printf("Found %zu prevs and %zu nexts for ID %d\n", block->prevs.size(), block->nexts.size(), id);
-        
-    }
+    db.apply_trace(t1);
+    db.apply_prevs_nexts();
 
     std::ofstream out("final_timeline.txt");
     for (const auto& s : t1) out << s << "\n";
@@ -157,25 +118,8 @@ std::vector<BCBlock> load_blocks() {
         dict_out << "\n";
     }
 
-    std::cout << "Output trace saved.\n";
+    std::cout << "Output trace saved." << std::endl;
 
-    while (true) {
-        std::cout << "Enter a block name to search: ";
-        std::string block_name; std::cin >> block_name;
-        BCBlock* block = db.getByName(block_name);
+    return db;
 
-        if (!block) {
-            std::cout << "Block not found!\n";
-            continue;
-        }
-
-        block->info();
-
-    }
-
-    return {};
-}
-
-int main(int argc, char* argv[]) {
-    load_blocks();
 }

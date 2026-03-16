@@ -1,39 +1,43 @@
 #include "block.hpp"
+#include "database.hpp"
+#include "util/util.hpp"
 #include <iostream>
+#include <sstream>
+#include <string>
 
-using std::cout;
 using super = BCBlock;
 
-void BCBlock::info() const {
-    cout << '\n';
-    cout << "Name:     " << name << '\n';
-    cout << "ID:       " << id << '\n';
-    cout << '\n';
-    cout << "Locations (" << loc_count() << "):\n";
+std::string BCBlock::info(const BCDatabase& db) const {
+    std::stringstream in;
+    in << '\n';
+    in << "Name:     " << name << '\n';
+    in << "ID:       " << id << '\n';
+    in << '\n';
+    in << "Locations (" << loc_count() << "):\n";
     for (auto const& el : locs) 
-        cout << "   " << el << '\n';
-    cout << '\n';
+        in << "   " << to_hex(el) << '\n';
+    in << '\n';
     if (prevs.size() == 0) {
-        std::cout << "No predecessors\n";
+        in << "No predecessors\n";
     } else {
-        std::cout << prevs.size() << " predecessors: \n";
-        for (auto const& [next, count] : prevs)
-            std::cout << "   " << next << " (x" << count << ")\n";
-        std::cout << '\n';
+        in << prevs.size() << " predecessors: \n";
+        for (auto const& [prev, count] : prevs)
+            in << "   " << db.getById(prev)->name << " (x" << count << ")\n";
+        in << '\n';
     } 
 
     if (nexts.size() == 0) {
-        std::cout << "No successors\n";
+        in << "No successors\n";
     } else {
-        std::cout << nexts.size() << " successors:  \n";
+        in << nexts.size() << " successors:  \n";
         for (auto const& [next, count] : nexts)
-            std::cout << "   " << next << " (x" << count << ")\n";
-        std::cout << '\n';
+            in << "   " << db.getById(next)->name << " (x" << count << ")\n";
+        in << '\n';
     } 
-
+    return in.str();
 }
 
-void BCBasicBlock::info() const {
-    super::info();
-    cout << "BCBasicBlock\n";
+std::string BCBasicBlock::info(const BCDatabase& db) const {
+    std::string generic = super::info(db);
+    return generic + "BCBasicBlock\n";
 }

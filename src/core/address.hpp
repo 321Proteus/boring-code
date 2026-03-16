@@ -2,12 +2,12 @@
 
 #include <cstdint>
 
-#define _PLATFORM_X86 true
+// #define _PLATFORM_X64
 
-#ifdef _PLATFORM_X86
+#ifndef _PLATFORM_X64
 typedef uint32_t BCAddr;
 constexpr std::size_t ADDR_SIZE = 4;
 #else
-typedef uin64_t BCAddr;
+typedef uint64_t BCAddr;
 constexpr std::size_t ADDR_SIZE = 8;
 #endif

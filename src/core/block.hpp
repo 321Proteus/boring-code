@@ -6,13 +6,17 @@
 #include <cstdint>
 #include <map>
 
+#include "address.hpp"
+
+class BCDatabase;
+
 class BCBlock {
 private:
     uint32_t id;
 public:
 
     std::string name;
-    std::vector<std::string> locs;
+    std::vector<BCAddr> locs;
 
     uint16_t instr_count;
     uint32_t usage_count;
@@ -24,23 +28,27 @@ public:
         return locs.size();
     }
 
-    virtual void info() const;
+    virtual std::string info(const BCDatabase& db) const;
 
-    uint32_t first_loc() const {
-        return std::stoi(locs.front(), nullptr, 16);
+    uint32_t get_id() const {
+        return id;
     }
 
-    uint32_t last_loc() const {
-        return std::stoi(locs.back(), nullptr, 16);
+    BCAddr first_loc() const {
+        return locs.front();
     }
 
-    bool check_loc(const std::string& target) const {
+    BCAddr last_loc() const {
+        return locs.back();
+    }
+
+    bool check_loc(BCAddr target) const {
         return std::find(locs.begin(), locs.end(), target) != locs.end();
     }
 
     BCBlock() = default;
 
-    BCBlock(uint32_t id, std::string name, std::vector<std::string> locs):
+    BCBlock(uint32_t id, std::string name, std::vector<BCAddr> locs):
         id(id), name(name), locs(std::move(locs)) {}
 
     virtual ~BCBlock() = default;
@@ -53,9 +61,11 @@ public:
         return 1;
     }
 
-    void info() const override;
+    std::string info(const BCDatabase& db) const override;
 
-    BCBasicBlock(uint32_t id, std::string name) :
-        BCBlock(id, std::move(name), { name }) {}
+    BCBasicBlock(uint32_t id, std::string address) :
+        BCBlock(id, address, {}) {
+            locs.push_back(static_cast<BCAddr>(std::stoi(address, 0, 16)));
+        }
 
 };
