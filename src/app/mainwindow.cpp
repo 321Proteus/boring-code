@@ -1,5 +1,5 @@
 #include "mainwindow.h"
-#include <iostream>
+#include <memory>
 #include "./ui_mainwindow.h"
 #include "../core/loader.hpp"
 #include "../core/database.hpp"
@@ -19,15 +19,14 @@ MainWindow::MainWindow(QWidget *parent)
 
 void MainWindow::loadDatabase() {
 
-    this->db = load_database("functions.bin");
+    this->db = std::make_unique<BCDatabase>(load_database("functions.bin"));
 
-    std::cout << db.blocks.size() << std::endl;
 
     const int LIMIT = 100;
     int i = 0;
 
-    for (const auto& step : db.trace) {
-        BCBlock* block = db.getById(step);
+    for (const auto& step : db->trace) {
+        BCBlock* block = db->getById(step);
         ui->TraceView->addItem(QString::fromStdString(block->name));
         if (i++ == LIMIT) break;
     }
@@ -42,8 +41,8 @@ void MainWindow::onSelectionChanged() {
     auto selected = ui->TraceView->selectedItems();
     if (selected.size() == 1) {
         QString block_name = selected.first()->text();
-        BCBlock* block = db.getByName(block_name.toStdString());
-        std::string details = block->info(db);
+        BCBlock* block = db->getByName(block_name.toStdString());
+        std::string details = block->info(db.get());
         ui->DetailsView->setText(QString::fromStdString(details));
     } else {
         ui->DetailsView->clear();

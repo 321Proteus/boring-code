@@ -3,6 +3,7 @@
 
 #include "core/database.hpp"
 #include <QMainWindow>
+#include <memory>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -18,7 +19,7 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
     void loadDatabase();
-    BCDatabase db;
+    std::unique_ptr<BCDatabase> db;
 
 private slots:
     void onSelectionChanged();

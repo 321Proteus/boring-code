@@ -28,7 +28,7 @@ public:
         return locs.size();
     }
 
-    virtual std::string info(const BCDatabase& db) const;
+    virtual std::string info(const BCDatabase* db) const;
 
     uint32_t get_id() const {
         return id;
@@ -61,7 +61,7 @@ public:
         return 1;
     }
 
-    std::string info(const BCDatabase& db) const override;
+    std::string info(const BCDatabase* db) const override;
 
     BCBasicBlock(uint32_t id, std::string address) :
         BCBlock(id, address, {}) {
