@@ -10,10 +10,10 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-
+file(GLOB_RECURSE CORE_SOURCES src/core/*.cpp src/core/*.h)
+file(GLOB_RECURSE APP_COMMON_SOURCES src/shared/*.cpp src/shared/*.h)
 file(GLOB_RECURSE APP_QT_SOURCES src/app/*.cpp src/app/*.h src/app/*.ui)
 file(GLOB_RECURSE APP_CLI_SOURCES src/cli/*.cpp src/cli/*.h)
-file(GLOB_RECURSE CORE_SOURCES src/core/*.cpp src/core/*.h)
 
 add_executable(BoringCodeCLI
     ${APP_CLI_SOURCES}
@@ -30,3 +30,4 @@ add_executable(BoringCode
 target_link_libraries(BoringCode Qt6::Widgets)
 
 target_include_directories(BoringCode PRIVATE src)
+target_include_directories(BoringCodeCLI PRIVATE src)
