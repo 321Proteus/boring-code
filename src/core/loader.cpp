@@ -13,7 +13,7 @@
 #include "block.hpp"
 #include "address.hpp"
 
-typedef std::vector<std::string> Trace;
+typedef std::vector<std::uint32_t> Trace;
 
 Trace build_chains(BCDatabase& db, const std::vector<BCAddr>& raw) {
 
@@ -66,27 +66,30 @@ Trace build_chains(BCDatabase& db, const std::vector<BCAddr>& raw) {
     
     for (size_t i = 0; i < raw.size(); ) {
         BCAddr curr = raw[i];
+        
+        db.update_job_progress(i);
 
         if (glue.count(curr)) {
             BCBlock* block = db.getByName(blk_starts[curr]);
-            trace.push_back(block->name);
+            trace.push_back(block->get_id());
             i += block->loc_count();
         } else {
 
             std::string hex_addr = to_hex(curr);
 
             try {
+                trace.push_back(blk_id);
                 db.insert<BCBasicBlock>(blk_id, hex_addr);
                 blk_id++;
             } catch (std::runtime_error e) {
                 // printf("Error while inserting block %s (ID %d): %s\n", hex_addr.c_str(), blk_id, e.what());
             }
-
-            trace.push_back(hex_addr);
             i++;
-
         }
     }
+
+    db.update_job_progress(raw.size());
+    
     return trace;
 }
 
@@ -99,10 +102,12 @@ BCDatabase load_database(const std::string& path) {
 
     BCDatabase db;
     
+    db.setup_job(raw_data.size());
     Trace t1 = build_chains(db, raw_data);
+    db.update_job_progress(raw_data.size());
 
     std::cout
-        << "Analysis done with " << db.blocks.size() << " unique addrs and "
+        << "\nAnalysis done with " << db.blocks.size() << " unique addrs and "
         << t1.size() << " lines of trace. Saving..." << std::endl;
 
     db.apply_trace(t1);

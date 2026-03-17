@@ -12,6 +12,8 @@
 class BCBlock;
 
 class BCDatabase {
+private:
+    std::pair<uint64_t, uint64_t> job_progress;
 public:
     std::unordered_map<std::string, uint32_t> names;
     std::unordered_map<uint32_t, std::unique_ptr<BCBlock>> blocks;
@@ -19,27 +21,6 @@ public:
     
     std::unordered_map<BCAddr, std::map<BCAddr, int>> next_map;
     std::unordered_map<BCAddr, std::map<BCAddr, int>> prev_map;
-
-    // Declaration only - implementation in database.cpp due to BCBlock forward declaration
-    bool rename(uint32_t id, std::string newName);
-
-    BCBlock* getByName(const std::string& name) const {
-        auto it = names.find(name);
-        if (it == names.end()) return nullptr;
-        return blocks.at(it->second).get();
-    }
-
-    BCBlock* getById(uint32_t id) const {
-        auto it = blocks.find(id);
-        if (it == blocks.end()) return nullptr;
-        return it->second.get();
-    }
-
-    BCBlock* getByLoc(BCAddr address) const;
-
-    void apply_prevs_nexts();
-
-    void apply_trace(const std::vector<std::string>& trace);
 
     template<typename T, typename... Args>
     void insert(uint32_t id, const std::string& name, Args&&... args) {
@@ -60,6 +41,29 @@ public:
         names[name] = id;
         blocks.emplace(id, std::move(block));
     }
+
+    bool rename(uint32_t id, std::string newName);
+
+    BCBlock* getByName(const std::string& name) const {
+        auto it = names.find(name);
+        if (it == names.end()) return nullptr;
+        return blocks.at(it->second).get();
+    }
+
+    BCBlock* getById(uint32_t id) const {
+        auto it = blocks.find(id);
+        if (it == blocks.end()) return nullptr;
+        return it->second.get();
+    }
+
+    BCBlock* getByLoc(BCAddr address) const;
+
+    void apply_prevs_nexts();
+    void apply_trace(const std::vector<uint32_t>& trace);
+
+    void setup_job(uint64_t size);
+    void update_job_progress(uint64_t new_progress);
+
 
     BCDatabase() = default;
 
