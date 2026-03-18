@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <ostream>
 #include <stdexcept>
 #include <unordered_map>
 #include <cstddef>
@@ -7,6 +8,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include "ui/view.hpp"
 #include "util/util.hpp"
 
 #include "database.hpp"
@@ -15,7 +17,7 @@
 
 typedef std::vector<std::uint32_t> Trace;
 
-Trace build_chains(BCDatabase& db, const std::vector<BCAddr>& raw) {
+Trace build_chains(BCDatabase& db, const std::vector<BCAddr>& raw, BCStatusView& sv) {
 
     for (size_t i=0;i<raw.size()-1;i++) {
         db.next_map[raw[i]][raw[i+1]]++;
@@ -67,7 +69,7 @@ Trace build_chains(BCDatabase& db, const std::vector<BCAddr>& raw) {
     for (size_t i = 0; i < raw.size(); ) {
         BCAddr curr = raw[i];
         
-        db.update_job_progress(i);
+        sv.update_job_progress(i);
 
         if (glue.count(curr)) {
             BCBlock* block = db.getByName(blk_starts[curr]);
@@ -88,23 +90,39 @@ Trace build_chains(BCDatabase& db, const std::vector<BCAddr>& raw) {
         }
     }
 
-    db.update_job_progress(raw.size());
+    sv.update_job_progress(raw.size());
     
     return trace;
 }
 
-BCDatabase load_database(const std::string& path) {
+BCDatabase load_database(const std::string& path, BCStatusView& sv) {
 
     std::vector<BCAddr> raw_data;
     std::ifstream f(path, std::ios::binary);
-    BCAddr a; while(f.read((char*)&a, sizeof(BCAddr))) raw_data.push_back(a);
-    std::cout << "Start: " << raw_data.size() << " addrs" << std::endl;
+
+    std::cout << "Loading trace..." << std::endl;
+
+    f.seekg(0, std::ios::end);
+    sv.setup_job(f.tellg() / sizeof(BCAddr));
+
+    f.seekg(0, std::ios::beg);
+
+    BCAddr a;
+    int read = 0;
+    while(f.read((char*)&a, sizeof(BCAddr))) {
+        raw_data.push_back(a);
+        sv.update_job_progress(read++);
+    }
+
+    std::cout << "\nSuccessfully loaded " << raw_data.size() << " addresses!" << std::endl;
 
     BCDatabase db;
+
+    std::cout << "Building blocks..." << std::endl;
     
-    db.setup_job(raw_data.size());
-    Trace t1 = build_chains(db, raw_data);
-    db.update_job_progress(raw_data.size());
+    sv.setup_job(raw_data.size());
+    Trace t1 = build_chains(db, raw_data, sv);
+    sv.update_job_progress(raw_data.size());
 
     std::cout
         << "\nAnalysis done with " << db.blocks.size() << " unique addrs and "

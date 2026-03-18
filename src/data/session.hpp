@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/database.hpp"
+#include "ui/view.hpp"
 #include <map>
 #include <memory>
 #include <string>
@@ -14,7 +15,10 @@ private:
 public:
 
     std::unique_ptr<BCDatabase> database;
-    
+    BCTraceView* trace_view = nullptr;
+    BCDetailsView* details_view = nullptr;
+    BCStatusView* status_view = nullptr;
+
     template<typename T>
     void set(const std::string& key, T value) {
         data[key] = value;

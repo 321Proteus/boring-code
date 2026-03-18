@@ -34,20 +34,23 @@ void BCDatabase::apply_trace(const std::vector<uint32_t>& trace) {
     this->trace = trace;
 }
 
-void BCDatabase::setup_job(uint64_t size) {
-    job_progress = { 0, size };
-}
-
-void BCDatabase::update_job_progress(uint64_t new_progress) {
-
-    uint64_t total = job_progress.second;
-    job_progress.first = new_progress;
-    if (new_progress % (total/1000) == 0 || new_progress == total) printf("\rProgress: %lu/%lu (%.1f%%)", new_progress, total, ((float)new_progress/total*100));
-}
-
 BCBlock* BCDatabase::getByLoc(BCAddr address) const {
     for (auto const& [id, block] : blocks) {
         if (block->check_loc(address)) return block.get();
     }
     return nullptr;
+}
+
+BCBlock::Details BCDatabase::generate_details(const BCBlock& block) const {
+
+    BCBlock::Details d = { block.get_id(), block.name, block.locs, {}, {} };
+
+    for (const auto& [prev, count] : block.prevs)
+        d.prevs.push_back({ prev, getById(prev)->name, count });
+
+    for (const auto& [next, count] : block.nexts)
+        d.nexts.push_back({ next, getById(next)->name, count });
+
+    return d;
+
 }

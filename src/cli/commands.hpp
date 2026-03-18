@@ -14,12 +14,9 @@
 #include <vector>
 #include "data/session.hpp"
 
-using std::string;
-using std::vector;
-
 struct CommandArgs {
-    string main_arg;
-    vector<std::pair<string, string>> additional_args;
+    std::string main_arg;
+    std::vector<std::pair<std::string, std::string>> additional_args;
 };
 
 class Command {
@@ -30,7 +27,7 @@ public:
     virtual int exec(const CommandArgs& args, Session& sess) = 0;
     virtual std::any output() const = 0;
 
-    string helpText;
+    const std::string helpText;
 
     virtual ~Command() = default;
 };
@@ -50,7 +47,9 @@ public:
             return 0x2;
         }
 
-        sess.database = std::make_unique<BCDatabase>(load_database(args.main_arg));
+        auto sv = sess.status_view;
+
+        sess.database = std::make_unique<BCDatabase>(load_database(args.main_arg, *sv));
         sess.set("db_loaded", 1);
         return 0x0;
     }
@@ -58,6 +57,8 @@ public:
     std::any output() const override {
         return NULL;
     }
+
+    const std::string helpText = "Load a PIN-generated code execution trace from a given path";
 
 };
 
@@ -78,14 +79,17 @@ public:
             std::cerr << "Block not found!" << std::endl;
             return 0x4;
         }
+        BCBlock::Details d = db->generate_details(*block);
+        sess.details_view->show_details(d);
 
-        std::cout << block->info(db);
         return 0x0;
     }
 
     std::any output() const override {
         return NULL;
     }
+
+    const std::string helpText = "Display details about a block included in the loaded trace";
 
 };
 
@@ -101,22 +105,58 @@ public:
         return NULL;
     }
 
+    const std::string helpText = "Clear the screen";
+
 };
 
-const std::map<string, string> short_names = {
+const std::map<std::string, std::string> short_names = {
     { "lt", "loadtrace" },
     { "lb", "loadbinary" },
     { "c", "clear" },
     { "b", "block" },
-    { "s", "save" }
+    { "s", "save" },
+    // { "h", "help" }
 };
 
 const std::map<std::string, std::shared_ptr<Command>> commands = {
     { "loadtrace", std::make_shared<LoadDatabaseCommand>() },
     { "clear", std::make_shared<ClearCommand>() },
-    { "block", std::make_shared<BlockDetailsCommand>() }
+    { "block", std::make_shared<BlockDetailsCommand>() },
+    // { "help", std::make_shared<HelpCommand>() }
 };
 
-// void clear_terminal();
+class HelpCommand : public Command {
+public:
 
-// void get_block(const BCDatabase& db, string block_name);
+    int exec(const CommandArgs& args, Session& sess) override {
+
+        if (args.main_arg != "") {
+
+            bool found = false;
+            for (const auto& [short_name, long_name] : short_names) {
+                if (long_name == args.main_arg) {
+                    std::cout << long_name << ", " << short_name << " - " << commands.at(long_name)->helpText << std::endl;
+                }
+            }
+
+            if (!found) {
+                std::cerr << "The target command is invalid!" << std::endl;
+                return 0x5;
+            }
+
+        } else {
+            for (const auto& [short_name, long_name] : short_names) {
+                std::cout << long_name << ", " << short_name << " - " << commands.at(long_name)->helpText << std::endl;
+            }
+        }
+
+        return 0x0;
+    }
+
+    std::any output() const override {
+        return NULL;
+    }
+
+    const std::string helpText = "Prints help on a specific command or lists commands";
+
+};

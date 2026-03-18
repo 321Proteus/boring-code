@@ -1,7 +1,8 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include "core/database.hpp"
+#include "app/view.hpp"
+#include "data/session.hpp"
 #include <QMainWindow>
 #include <memory>
 
@@ -16,15 +17,16 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = nullptr);
+    MainWindow(Session& sess, QWidget *parent = nullptr);
     ~MainWindow();
     void loadDatabase();
-    std::unique_ptr<BCDatabase> db;
 
 private slots:
     void onSelectionChanged();
 
 private:
     Ui::MainWindow *ui;
+    Session& session;
+    std::unique_ptr<QtView> view;
 };
 #endif // MAINWINDOW_H

@@ -1,13 +1,21 @@
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
 #include "commands.hpp"
 #include "data/session.hpp"
+#include "view.hpp"
 
 int main(int argc, char* argv[]) {
 
     Session sess;
+
+    auto view = std::make_unique<BCConsoleView>();
+    
+    sess.trace_view = view.get();
+    sess.details_view = view.get();
+    sess.status_view = view.get();
 
     while (true) {
 

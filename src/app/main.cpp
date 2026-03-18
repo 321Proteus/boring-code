@@ -1,5 +1,5 @@
+#include "data/session.hpp"
 #include "mainwindow.h"
-
 #include <QApplication>
 #include <QLocale>
 #include <QTranslator>
@@ -17,7 +17,10 @@ int main(int argc, char *argv[])
             break;
         }
     }
-    MainWindow w;
+
+    Session session;
+
+    MainWindow w(session);
     w.show();
     w.loadDatabase();
     return a.exec();

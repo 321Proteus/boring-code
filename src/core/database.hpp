@@ -8,12 +8,11 @@
 #include <map>
 
 #include "address.hpp"
+#include "core/block.hpp"
 
 class BCBlock;
 
 class BCDatabase {
-private:
-    std::pair<uint64_t, uint64_t> job_progress;
 public:
     std::unordered_map<std::string, uint32_t> names;
     std::unordered_map<uint32_t, std::unique_ptr<BCBlock>> blocks;
@@ -56,14 +55,12 @@ public:
         return it->second.get();
     }
 
+    BCBlock::Details generate_details(const BCBlock& block) const;
+
     BCBlock* getByLoc(BCAddr address) const;
 
     void apply_prevs_nexts();
     void apply_trace(const std::vector<uint32_t>& trace);
-
-    void setup_job(uint64_t size);
-    void update_job_progress(uint64_t new_progress);
-
 
     BCDatabase() = default;
 
