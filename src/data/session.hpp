@@ -15,9 +15,9 @@ private:
 public:
 
     std::unique_ptr<BCDatabase> database;
-    BCTraceView* trace_view = nullptr;
-    BCDetailsView* details_view = nullptr;
-    BCStatusView* status_view = nullptr;
+    BCTraceViewModel* trace_view = nullptr;
+    BCDetailsViewModel* details_view = nullptr;
+    BCStatusViewModel* status_view = nullptr;
 
     template<typename T>
     void set(const std::string& key, T value) {

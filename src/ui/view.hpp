@@ -2,18 +2,18 @@
 
 #include "core/block.hpp"
 
-class BCTraceView {
+class BCTraceViewModel {
 public:
     virtual void show_trace() const = 0;
 };
 
-class BCDetailsView {
+class BCDetailsViewModel {
 public:
     virtual void show_details(const BCBlock::Details& details) const = 0;
     virtual void show_details(const BCBasicBlock& block) const = 0;
 };
 
-class BCStatusView {
+class BCStatusViewModel {
 private:
     std::pair<uint64_t, uint64_t> job_progress;
 public:

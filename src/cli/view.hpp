@@ -3,10 +3,10 @@
 #include "core/block.hpp"
 #include "ui/view.hpp"
 
-class BCConsoleView :
-    public BCTraceView,
-    public BCDetailsView,
-    public BCStatusView
+class ConsoleViewModel :
+    public BCTraceViewModel,
+    public BCDetailsViewModel,
+    public BCStatusViewModel
 {
 private:
     std::pair<uint64_t, uint64_t> job_progress;

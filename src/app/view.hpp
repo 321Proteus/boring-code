@@ -12,17 +12,17 @@ struct QtUI {
     QProgressBar* progress_bar;
 };
 
-class QtView :
-    public BCTraceView,
-    public BCDetailsView,
-    public BCStatusView
+class QtViewModel :
+    public BCTraceViewModel,
+    public BCDetailsViewModel,
+    public BCStatusViewModel
 {
 private:
     QtUI ui;
     std::pair<uint64_t, uint64_t> job_progress;
 public:
 
-    QtView(const QtUI& ui) : ui(ui) {}
+    QtViewModel(const QtUI& ui) : ui(ui) {}
 
     void show_trace() const;
     void show_details(const BCBlock::Details& details) const;

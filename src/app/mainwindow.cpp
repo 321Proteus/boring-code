@@ -23,7 +23,7 @@ MainWindow::MainWindow(Session& sess, QWidget *parent)
         .progress_bar = nullptr
     };
 
-    view = std::make_unique<QtView>(qtui);
+    view = std::make_unique<QtViewModel>(qtui);
 
     session.trace_view = view.get();
     session.details_view = view.get();
@@ -35,7 +35,7 @@ MainWindow::MainWindow(Session& sess, QWidget *parent)
 
 void MainWindow::loadDatabase() {
 
-    BCStatusView* sv = this->session.status_view;
+    BCStatusViewModel* sv = this->session.status_view;
     this->session.database = std::make_unique<BCDatabase>(load_database("functions.bin", *sv));
 
     BCDatabase* db = this->session.database.get();

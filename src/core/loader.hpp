@@ -3,4 +3,4 @@
 #include "database.hpp"
 #include "ui/view.hpp"
 
-BCDatabase load_database(const std::string& path, BCStatusView& sv);
+BCDatabase load_database(const std::string& path, BCStatusViewModel& sv);

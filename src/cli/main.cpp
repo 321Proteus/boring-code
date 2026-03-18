@@ -11,7 +11,7 @@ int main(int argc, char* argv[]) {
 
     Session sess;
 
-    auto view = std::make_unique<BCConsoleView>();
+    auto view = std::make_unique<ConsoleViewModel>();
     
     sess.trace_view = view.get();
     sess.details_view = view.get();

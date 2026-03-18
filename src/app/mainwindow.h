@@ -27,6 +27,6 @@ private slots:
 private:
     Ui::MainWindow *ui;
     Session& session;
-    std::unique_ptr<QtView> view;
+    std::unique_ptr<QtViewModel> view;
 };
 #endif // MAINWINDOW_H

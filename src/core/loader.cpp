@@ -17,7 +17,7 @@
 
 typedef std::vector<std::uint32_t> Trace;
 
-Trace build_chains(BCDatabase& db, const std::vector<BCAddr>& raw, BCStatusView& sv) {
+Trace build_chains(BCDatabase& db, const std::vector<BCAddr>& raw, BCStatusViewModel& sv) {
 
     for (size_t i=0;i<raw.size()-1;i++) {
         db.next_map[raw[i]][raw[i+1]]++;
@@ -95,7 +95,7 @@ Trace build_chains(BCDatabase& db, const std::vector<BCAddr>& raw, BCStatusView&
     return trace;
 }
 
-BCDatabase load_database(const std::string& path, BCStatusView& sv) {
+BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
 
     std::vector<BCAddr> raw_data;
     std::ifstream f(path, std::ios::binary);

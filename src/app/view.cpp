@@ -5,7 +5,7 @@
 #include <iostream>
 #include <sstream>
 
-void QtView::show_details(const BCBlock::Details& details) const {
+void QtViewModel::show_details(const BCBlock::Details& details) const {
 
     std::stringstream iss;
     iss << '\n';
@@ -40,25 +40,25 @@ void QtView::show_details(const BCBlock::Details& details) const {
 
 }
 
-void QtView::show_details(const BCBasicBlock& details) const {
+void QtViewModel::show_details(const BCBasicBlock& details) const {
 
 }
 
-void QtView::show_trace() const {
+void QtViewModel::show_trace() const {
     
 }
 
-void QtView::setup_job(uint64_t size) {
+void QtViewModel::setup_job(uint64_t size) {
     job_progress = { 0, size };
 }
 
-void QtView::update_job_progress(uint64_t new_progress) {
+void QtViewModel::update_job_progress(uint64_t new_progress) {
     uint64_t total = job_progress.second;
     job_progress.first = new_progress;
     if (new_progress % (total/1000) == 0 || new_progress == total) printf("\rProgress: %lu/%lu (%.1f%%)", new_progress, total, ((float)new_progress/total*100));
 
 }
 
-void QtView::show_error(const std::string& msg) const {
+void QtViewModel::show_error(const std::string& msg) const {
 
 }
