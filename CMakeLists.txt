@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(BoringCode)
+project(BoringCode LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -10,10 +10,30 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-file(GLOB_RECURSE CORE_SOURCES src/core/*.cpp src/core/*.h)
-file(GLOB_RECURSE APP_COMMON_SOURCES src/shared/*.cpp src/shared/*.h)
-file(GLOB_RECURSE APP_QT_SOURCES src/app/*.cpp src/app/*.h src/app/*.ui)
-file(GLOB_RECURSE APP_CLI_SOURCES src/cli/*.cpp src/cli/*.h)
+file(GLOB_RECURSE CORE_SOURCES
+    src/core/*.cpp
+    src/core/*.hpp
+    src/core/*.h
+)
+
+file(GLOB_RECURSE APP_COMMON_SOURCES
+    src/shared/*.cpp
+    src/shared/*.hpp
+    src/shared/*.h
+)
+
+file(GLOB_RECURSE APP_QT_SOURCES
+    src/app/*.cpp
+    src/app/*.hpp
+    src/app/*.h
+    src/app/*.ui
+)
+
+file(GLOB_RECURSE APP_CLI_SOURCES
+    src/cli/*.cpp
+    src/cli/*.hpp
+    src/cli/*.h
+)
 
 add_executable(BoringCodeCLI
     ${APP_CLI_SOURCES}
