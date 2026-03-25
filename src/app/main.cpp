@@ -22,6 +22,5 @@ int main(int argc, char *argv[])
 
     MainWindow w(session);
     w.show();
-    w.loadDatabase();
     return a.exec();
 }

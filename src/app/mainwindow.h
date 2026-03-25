@@ -19,10 +19,14 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(Session& sess, QWidget *parent = nullptr);
     ~MainWindow();
-    void loadDatabase();
+    void loadDatabase(QString& path);
 
 private slots:
     void onSelectionChanged();
+
+protected:
+    void dragEnterEvent(QDragEnterEvent* event) override;
+    void dropEvent(QDropEvent* event) override;
 
 private:
     Ui::MainWindow *ui;

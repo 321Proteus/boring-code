@@ -7,6 +7,9 @@
 #include "app/view.hpp"
 #include "data/session.hpp"
 #include "ui/view.hpp"
+#include <QDragEnterEvent>
+#include <QMimeData>
+#include <QDropEvent>
 
 MainWindow::MainWindow(Session& sess, QWidget *parent)
     : QMainWindow(parent), session(sess)
@@ -14,6 +17,7 @@ MainWindow::MainWindow(Session& sess, QWidget *parent)
 {
     ui->setupUi(this);
     ui->TraceView->setSelectionMode(QAbstractItemView::ContiguousSelection);
+    setAcceptDrops(true);
 
     QtUI qtui {
         .trace_view = ui->TraceView,
@@ -32,10 +36,10 @@ MainWindow::MainWindow(Session& sess, QWidget *parent)
             this, &MainWindow::onSelectionChanged);
 }
 
-void MainWindow::loadDatabase() {
+void MainWindow::loadDatabase(QString& path) {
 
     BCStatusViewModel* sv = this->session.status_view;
-    this->session.database = std::make_unique<BCDatabase>(load_database("functions.bin", *sv));
+    this->session.database = std::make_unique<BCDatabase>(load_database(path.toStdString(), *sv));
 
     BCDatabase* db = this->session.database.get();
 
@@ -51,6 +55,20 @@ void MainWindow::loadDatabase() {
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::dragEnterEvent(QDragEnterEvent* event) {
+    if (event->mimeData()->hasUrls()) {
+        event->acceptProposedAction();
+    }
+}
+
+void MainWindow::dropEvent(QDropEvent* event) {
+    const auto urls = event->mimeData()->urls();
+    if (urls.isEmpty()) return;
+    QString path = urls.first().toLocalFile();
+    if (path.isEmpty()) return;
+    loadDatabase(path);
 }
 
 void MainWindow::onSelectionChanged() {

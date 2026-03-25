@@ -3,6 +3,7 @@
 #include "core/util/util.hpp"
 #include <cstdint>
 #include <iostream>
+#include <QString>
 
 void QtViewModel::show_details(const BCBlock::Details& details) {
 
@@ -81,13 +82,18 @@ void QtViewModel::show_trace() const {
 
 void QtViewModel::setup_job(const std::string name, uint64_t size) {
     job = { name, size, 0 };
+    this->ui.progress_text->setText(QString::fromStdString(name));
+    this->ui.progress_bar->setRange(0, size);
 }
 
 void QtViewModel::update_job_progress(uint64_t progress) {
     job.progress = progress;
-    uint64_t size = job.size;
-    if (progress % (size/1000) == 0 || progress == size) printf("\rProgress: %lu/%lu (%.1f%%)", progress, size, ((float)progress/size*100));
-
+    if (progress % (job.size/1000) == 0) 
+        this->ui.progress_bar->setValue(progress);
+    else if (progress == job.size) {
+        this->ui.progress_bar->setValue(job.size);
+        this->ui.progress_text->setText("Idle");
+    }
 }
 
 void QtViewModel::show_error(const std::string& msg) const {

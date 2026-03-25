@@ -39,7 +39,7 @@
            </font>
           </property>
           <property name="text">
-           <string>TextLabel</string>
+           <string>Idle</string>
           </property>
          </widget>
         </item>
