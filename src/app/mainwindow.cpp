@@ -7,7 +7,6 @@
 #include "app/view.hpp"
 #include "data/session.hpp"
 #include "ui/view.hpp"
-#include <iostream>
 
 MainWindow::MainWindow(Session& sess, QWidget *parent)
     : QMainWindow(parent), session(sess)
@@ -15,12 +14,12 @@ MainWindow::MainWindow(Session& sess, QWidget *parent)
 {
     ui->setupUi(this);
     ui->TraceView->setSelectionMode(QAbstractItemView::ContiguousSelection);
-    ui->DetailsView->setOpenLinks(false);
 
     QtUI qtui {
-        .trace_list = ui->TraceView,
-        .details_text = ui->DetailsView,
-        .progress_bar = nullptr
+        .trace_view = ui->TraceView,
+        .details_view = ui->DetailsView,
+        .progress_bar = ui->ProgressBar,
+        .progress_text = ui->ProgressText
     };
 
     view = std::make_unique<QtViewModel>(qtui);
@@ -42,7 +41,6 @@ void MainWindow::loadDatabase() {
 
     const int LIMIT = 100;
     int i = 0;
-    std::cout << (db == nullptr) << std::endl;
     for (const auto& step : db->trace) {
         BCBlock* block = db->getById(step);
         ui->TraceView->addItem(QString::fromStdString(block->name));
@@ -56,13 +54,22 @@ MainWindow::~MainWindow()
 }
 
 void MainWindow::onSelectionChanged() {
+
     auto selected = ui->TraceView->selectedItems();
     BCDatabase* db = this->session.database.get();
+
     if (selected.size() == 1) {
+
         QString block_name = selected.first()->text();
         BCBlock* block = db->getByName(block_name.toStdString());
         this->session.details_view->show_details(db->generate_details(*block));
+
     } else {
-        ui->DetailsView->clear();
+
+        for (int i=0;i<ui->DetailsView->topLevelItemCount();i++) {
+            auto item = ui->DetailsView->topLevelItem(i);
+            item->takeChildren();
+            item->setText(1, "");
+        }
     }
 }

@@ -3,13 +3,16 @@
 #include "core/block.hpp"
 #include "ui/view.hpp"
 #include <QListWidget>
-#include <QTextBrowser>
+#include <QTreeWidget>
 #include <QProgressBar>
+#include <QString>
+#include <QLabel>
 
 struct QtUI {
-    QListWidget* trace_list;
-    QTextBrowser* details_text;
+    QListWidget* trace_view;
+    QTreeWidget* details_view;
     QProgressBar* progress_bar;
+    QLabel* progress_text;
 };
 
 class QtViewModel :
@@ -19,15 +22,15 @@ class QtViewModel :
 {
 private:
     QtUI ui;
-    std::pair<uint64_t, uint64_t> job_progress;
+    BCJob job;
 public:
 
     QtViewModel(const QtUI& ui) : ui(ui) {}
 
     void show_trace() const;
-    void show_details(const BCBlock::Details& details) const;
-    void show_details(const BCBasicBlock& details) const;
-    void setup_job(uint64_t size);
+    void show_details(const BCBlock::Details& details);
+    void show_details(const BCBasicBlock& details);
+    void setup_job(const std::string name, uint64_t size);
     void update_job_progress(uint64_t new_progress);
     void show_error(const std::string& msg) const;
 };

@@ -3,44 +3,75 @@
 #include "core/util/util.hpp"
 #include <cstdint>
 #include <iostream>
-#include <sstream>
 
-void QtViewModel::show_details(const BCBlock::Details& details) const {
+void QtViewModel::show_details(const BCBlock::Details& details) {
 
-    std::stringstream iss;
-    iss << '\n';
-    iss << "Name:     " << details.name << '\n';
-    iss << "ID:       " << details.id << '\n';
-    iss << '\n';
-    iss << "Locations (" << details.locs.size() << "):\n";
+    QTreeWidgetItem* name_widget = ui.details_view->topLevelItem(0);
+    name_widget->setText(0, "Name");
+    name_widget->setText(1,
+        QString::fromStdString(details.name)
+    );
 
-    for (auto const& el : details.locs) 
-        iss << "   " << to_hex(el) << '\n';
-    iss << '\n';
-    
-    if (details.prevs.size() == 0) {
-        iss << "Predecessors: None\n";
-    } else {
-        iss << details.prevs.size() << " predecessors: \n";
-        for (const Neighbor& prev : details.prevs)
-            iss << "   " << prev.name << " (x" << prev.count << ")\n";
-        iss << '\n';
-    } 
+    QTreeWidgetItem* usage_count_widget = ui.details_view->topLevelItem(1);
+    usage_count_widget->setText(0, "Usage count");
+    usage_count_widget->setText(
+        1,
+        QString("%1 (top %2)").arg(details.usage_count.value, details.usage_count.percentile)
+    );
 
-    if (details.nexts.size() == 0) {
-        iss << "Successors: None\n";
-    } else {
-        iss << details.nexts.size() << " successors: \n";
-        for (const Neighbor& next : details.nexts)
-            iss << "   " << next.name << " (x" << next.count << ")\n";
-        iss << '\n';
+    std::cout << details.usage_count.value << ' ' << details.usage_count.percentile << std::endl;
+
+    QTreeWidgetItem* instr_count_widget = ui.details_view->topLevelItem(2);
+    instr_count_widget->setText(0, "Instruction count");
+    instr_count_widget->setText(
+        1,
+        QString::fromStdString("TODO")
+    );
+
+    QTreeWidgetItem* loc_count_widget = ui.details_view->topLevelItem(3);
+    loc_count_widget->setText(0, "Location count");
+    loc_count_widget->setText(
+        1,
+        QString::fromStdString("TODO")
+    );
+
+    QTreeWidgetItem* size_widget = ui.details_view->topLevelItem(4);
+    size_widget->setText(0, "Total size");
+    size_widget->setText(
+        1,
+        QString::fromStdString("TODO")
+    );
+
+    QTreeWidgetItem* locs_widget = ui.details_view->topLevelItem(4);
+    locs_widget->setText(0, "Locations");
+    locs_widget->setText(
+        1,
+        QString::number(details.locs.size())
+    );
+
+    locs_widget->takeChildren();
+
+    QList<QTreeWidgetItem *> locs;
+
+    for (const BCAddr& loc : details.locs) {
+
+        QTreeWidgetItem* child = new QTreeWidgetItem();
+
+        child->setForeground(0, Qt::darkBlue);
+        QFont font = child->font(0);
+        font.setUnderline(true);
+        child->setFont(0, font);
+
+        child->setText(0, QString::fromStdString(to_hex(loc)));
+        locs.append(child);
+        child->setData(0, Qt::UserRole, QVariant::fromValue(loc));
     }
 
-    ui.details_text->setText(QString::fromStdString(iss.str()));
+    locs_widget->addChildren(locs);
 
 }
 
-void QtViewModel::show_details(const BCBasicBlock& details) const {
+void QtViewModel::show_details(const BCBasicBlock& details)  {
 
 }
 
@@ -48,14 +79,14 @@ void QtViewModel::show_trace() const {
     
 }
 
-void QtViewModel::setup_job(uint64_t size) {
-    job_progress = { 0, size };
+void QtViewModel::setup_job(const std::string name, uint64_t size) {
+    job = { name, size, 0 };
 }
 
-void QtViewModel::update_job_progress(uint64_t new_progress) {
-    uint64_t total = job_progress.second;
-    job_progress.first = new_progress;
-    if (new_progress % (total/1000) == 0 || new_progress == total) printf("\rProgress: %lu/%lu (%.1f%%)", new_progress, total, ((float)new_progress/total*100));
+void QtViewModel::update_job_progress(uint64_t progress) {
+    job.progress = progress;
+    uint64_t size = job.size;
+    if (progress % (size/1000) == 0 || progress == size) printf("\rProgress: %lu/%lu (%.1f%%)", progress, size, ((float)progress/size*100));
 
 }
 
