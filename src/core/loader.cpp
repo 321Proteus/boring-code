@@ -100,10 +100,9 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
     std::vector<BCAddr> raw_data;
     std::ifstream f(path, std::ios::binary);
 
-    std::cout << "Loading trace..." << std::endl;
 
     f.seekg(0, std::ios::end);
-    sv.setup_job(f.tellg() / sizeof(BCAddr));
+    sv.setup_job("Loading trace", f.tellg() / sizeof(BCAddr));
 
     f.seekg(0, std::ios::beg);
 
@@ -114,13 +113,9 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
         sv.update_job_progress(read++);
     }
 
-    std::cout << "\nSuccessfully loaded " << raw_data.size() << " addresses!" << std::endl;
-
     BCDatabase db;
-
-    std::cout << "Building blocks..." << std::endl;
     
-    sv.setup_job(raw_data.size());
+    sv.setup_job("Building blocks", raw_data.size());
     Trace t1 = build_chains(db, raw_data, sv);
     sv.update_job_progress(raw_data.size());
 

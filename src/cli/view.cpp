@@ -3,7 +3,7 @@
 #include "core/util/util.hpp"
 #include <iostream>
 
-void ConsoleViewModel::show_details(const BCBlock::Details& details) const {
+void ConsoleViewModel::show_details(const BCBlock::Details& details) {
 
     std::cout << '\n';
     std::cout << "Name:     " << details.name << '\n';
@@ -35,7 +35,7 @@ void ConsoleViewModel::show_details(const BCBlock::Details& details) const {
 
 }
 
-void ConsoleViewModel::show_details(const BCBasicBlock& details) const {
+void ConsoleViewModel::show_details(const BCBasicBlock& details) {
 
 }
 
@@ -43,14 +43,18 @@ void ConsoleViewModel::show_trace() const {
     
 }
 
-void ConsoleViewModel::setup_job(uint64_t size) {
-    job_progress = { 0, size };
+void ConsoleViewModel::setup_job(const std::string name, uint64_t size) {
+    job = { name, size, 0 };
+    std::cout << std::endl << name << "..." << std::endl;
 }
 
-void ConsoleViewModel::update_job_progress(uint64_t new_progress) {
-    uint64_t total = job_progress.second;
-    job_progress.first = new_progress;
-    if (new_progress % (total/1000) == 0 || new_progress == total) printf("\rProgress: %lu/%lu (%.1f%%)", new_progress, total, ((float)new_progress/total*100));
+void ConsoleViewModel::update_job_progress(uint64_t progress) {
+    job.progress = progress;
+    uint64_t size = job.size;
+    if (progress % (size/1000) == 0 || progress == size) {
+        printf("\rProgress: %lu/%lu (%.1f%%)", progress, size, (float)progress/size*100);
+    }
+
 }
 
 void ConsoleViewModel::show_error(const std::string& msg) const {
