@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/database.hpp"
+#include "core/loader.hpp"
 #include "ui/view.hpp"
 #include <map>
 #include <memory>
@@ -45,4 +46,11 @@ public:
     bool has(const std::string& key) const {
         return data.find(key) != data.end();
     }
+
+    void load_trace(const std::string& path) {
+        database = std::make_unique<BCDatabase>(
+            load_database(path, *status_view)
+        );
+    }
+
 };

@@ -49,7 +49,7 @@ public:
 
         auto sv = sess.status_view;
 
-        sess.database = std::make_unique<BCDatabase>(load_database(args.main_arg, *sv));
+        sess.load_trace(args.main_arg);
         sess.set("db_loaded", 1);
         return 0x0;
     }

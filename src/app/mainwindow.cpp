@@ -36,22 +36,6 @@ MainWindow::MainWindow(Session& sess, QWidget *parent)
             this, &MainWindow::onSelectionChanged);
 }
 
-void MainWindow::loadDatabase(QString& path) {
-
-    BCStatusViewModel* sv = this->session.status_view;
-    this->session.database = std::make_unique<BCDatabase>(load_database(path.toStdString(), *sv));
-
-    BCDatabase* db = this->session.database.get();
-
-    const int LIMIT = 100;
-    int i = 0;
-    for (const auto& step : db->trace) {
-        BCBlock* block = db->getById(step);
-        ui->TraceView->addItem(QString::fromStdString(block->name));
-        if (i++ == LIMIT) break;
-    }
-}
-
 MainWindow::~MainWindow()
 {
     delete ui;
@@ -68,7 +52,18 @@ void MainWindow::dropEvent(QDropEvent* event) {
     if (urls.isEmpty()) return;
     QString path = urls.first().toLocalFile();
     if (path.isEmpty()) return;
-    loadDatabase(path);
+    session.load_trace(path.toStdString());
+
+    BCDatabase* db = this->session.database.get();
+
+    const int LIMIT = 100;
+    int i = 0;
+    for (const auto& step : db->trace) {
+        BCBlock* block = db->getById(step);
+        ui->TraceView->addItem(QString::fromStdString(block->name));
+        if (i++ == LIMIT) break;
+    }
+
 }
 
 void MainWindow::onSelectionChanged() {

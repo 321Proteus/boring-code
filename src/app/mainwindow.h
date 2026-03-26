@@ -19,7 +19,6 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(Session& sess, QWidget *parent = nullptr);
     ~MainWindow();
-    void loadDatabase(QString& path);
 
 private slots:
     void onSelectionChanged();
