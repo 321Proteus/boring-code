@@ -17,10 +17,10 @@ void QtViewModel::show_details(const BCBlock::Details& details) {
     usage_count_widget->setText(0, "Usage count");
     usage_count_widget->setText(
         1,
-        QString("%1 (top %2)").arg(details.usage_count.value, details.usage_count.percentile)
+        QString("%1 (top %2%)")
+            .arg(details.usage_count.value)
+            .arg(int(details.usage_count.percentile * 10000)/10000.0)
     );
-
-    std::cout << details.usage_count.value << ' ' << details.usage_count.percentile << std::endl;
 
     QTreeWidgetItem* instr_count_widget = ui.details_view->topLevelItem(2);
     instr_count_widget->setText(0, "Instruction count");
