@@ -24,6 +24,6 @@ private:
     BCJob job;
 public:
     virtual void setup_job(const std::string name, uint64_t size) = 0;
-    virtual void update_job_progress(uint64_t new_progress) = 0;
-    virtual void show_error(const std::string& msg) const = 0;
+    virtual void update_job_progress(uint64_t progress) = 0;
+    virtual void show_error(const std::string& msg) = 0;
 };

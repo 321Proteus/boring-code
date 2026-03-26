@@ -1,15 +1,18 @@
 #include "mainwindow.h"
+#include <iostream>
 #include <memory>
 #include "./ui_mainwindow.h"
-#include "../core/loader.hpp"
 #include "../core/database.hpp"
 #include "../core/block.hpp"
-#include "app/view.hpp"
+#include "view.hpp"
+#include "worker.hpp"
 #include "data/session.hpp"
 #include "ui/view.hpp"
 #include <QDragEnterEvent>
 #include <QMimeData>
 #include <QDropEvent>
+#include <QThread>
+#include <QElapsedTimer>
 
 MainWindow::MainWindow(Session& sess, QWidget *parent)
     : QMainWindow(parent), session(sess)
@@ -52,17 +55,7 @@ void MainWindow::dropEvent(QDropEvent* event) {
     if (urls.isEmpty()) return;
     QString path = urls.first().toLocalFile();
     if (path.isEmpty()) return;
-    session.load_trace(path.toStdString());
-
-    BCDatabase* db = this->session.database.get();
-
-    const int LIMIT = 100;
-    int i = 0;
-    for (const auto& step : db->trace) {
-        BCBlock* block = db->getById(step);
-        ui->TraceView->addItem(QString::fromStdString(block->name));
-        if (i++ == LIMIT) break;
-    }
+    loadTraceAsync(path);
 
 }
 
@@ -85,4 +78,49 @@ void MainWindow::onSelectionChanged() {
             item->setText(1, "");
         }
     }
+}
+
+void MainWindow::loadTraceAsync(QString path) {
+    if (worker_thread) {
+        // worker->request_cancel();
+        // worker_thread->quit();
+        // worker_thread->wait();
+    }
+    QtStatusProxy* proxy = new QtStatusProxy();
+    QElapsedTimer timer;
+    timer.start();
+    connect(proxy, &QtStatusProxy::jobSetup,
+        this, [this](QString name, uint64_t size) {
+            view->setup_job(name.toStdString(), size);
+        });
+    connect(proxy, &QtStatusProxy::jobProgress,
+        this, [this](uint64_t progress) {
+            view->update_job_progress(progress);
+        });
+
+    worker_thread = new QThread;
+    worker = new BCWorker(session, path, proxy);
+    worker->moveToThread(worker_thread);
+
+    connect(worker_thread, &QThread::started,
+        worker, &BCWorker::load_trace);
+
+    connect(worker, &BCWorker::finished,
+        worker_thread, [this, timer]() {
+            std::cout << "Worker thread quit peacefully after " << timer.elapsed() << " miliseconds" << std::endl;
+            ui->ProgressBar->setValue(0);
+            ui->ProgressText->setText("Idle");
+            session.trace_view->show_trace();
+            worker_thread->quit();  
+        } );
+
+    connect(worker_thread, &QThread::finished,
+        worker, &QObject::deleteLater);
+
+    connect(worker_thread, &QThread::finished,
+        this, [timer]() { std::cout << "Thread finished "; });
+    connect(worker_thread, &QThread::finished,
+        worker_thread, &QObject::deleteLater);
+
+    worker_thread->start();
 }

@@ -50,7 +50,6 @@ void ConsoleViewModel::setup_job(const std::string name, uint64_t size) {
 }
 
 void ConsoleViewModel::update_job_progress(uint64_t progress) {
-    job.progress = progress;
     uint64_t size = job.size;
     if (progress % (size/1000) == 0 || progress == size) {
         printf("\rProgress: %lu/%lu (%.1f%%)", progress, size, (float)progress/size*100);
@@ -58,6 +57,6 @@ void ConsoleViewModel::update_job_progress(uint64_t progress) {
 
 }
 
-void ConsoleViewModel::show_error(const std::string& msg) const {
+void ConsoleViewModel::show_error(const std::string& msg) {
     std::cerr << "Error: " << msg << std::endl;
 }

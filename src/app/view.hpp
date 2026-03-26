@@ -32,5 +32,37 @@ public:
     void show_details(const BCBasicBlock& details);
     void setup_job(const std::string name, uint64_t size);
     void update_job_progress(uint64_t new_progress);
-    void show_error(const std::string& msg) const;
+    void show_error(const std::string& msg);
+};
+
+class QtStatusProxy :
+    public QObject,
+    public BCStatusViewModel
+{
+    Q_OBJECT
+private:
+    BCJob job;
+    int last_percent = -1;
+public:
+
+    void setup_job(const std::string name, uint64_t size) override {
+        job = { name, size, 0 };
+        emit jobSetup(QString::fromStdString(name), size);
+    }
+    void update_job_progress(uint64_t progress) override {
+        if (!job.size) return;
+        int percent = (progress * 100) / job.size;
+        if (percent != last_percent) {
+            last_percent = percent;
+            emit jobProgress(progress);
+        }
+    }
+    void show_error(const std::string& msg) override {
+        emit jobError(QString::fromStdString(msg));
+    }
+
+signals:
+    void jobSetup(QString name, uint64_t size);
+    void jobProgress(uint64_t progress);
+    void jobError(QString msg);
 };

@@ -15,6 +15,6 @@ public:
     void show_details(const BCBlock::Details& details);
     void show_details(const BCBasicBlock& details);
     void setup_job(const std::string name, uint64_t size);
-    void update_job_progress(uint64_t new_progress);
-    void show_error(const std::string& msg) const;
+    void update_job_progress(uint64_t progress);
+    void show_error(const std::string& msg);
 };

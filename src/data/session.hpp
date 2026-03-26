@@ -12,7 +12,6 @@
 class Session {
 private:
     std::map<std::string, std::any> data;
-    
 public:
 
     std::unique_ptr<BCDatabase> database;
@@ -47,9 +46,9 @@ public:
         return data.find(key) != data.end();
     }
 
-    void load_trace(const std::string& path) {
+    void load_trace(const std::string& path, BCStatusViewModel* model = nullptr) {
         database = std::make_unique<BCDatabase>(
-            load_database(path, *status_view)
+            load_database(path, (model ? *model : *status_view))
         );
     }
 

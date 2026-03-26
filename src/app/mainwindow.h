@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include "app/view.hpp"
+#include "app/worker.hpp"
 #include "data/session.hpp"
 #include <QMainWindow>
 #include <memory>
@@ -19,6 +20,7 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(Session& sess, QWidget *parent = nullptr);
     ~MainWindow();
+    void loadTraceAsync(QString path);
 
 private slots:
     void onSelectionChanged();
@@ -30,6 +32,8 @@ protected:
 private:
     Ui::MainWindow *ui;
     Session& session;
+    QThread* worker_thread = nullptr;
+    BCWorker* worker = nullptr;
     std::unique_ptr<QtViewModel> view;
 };
 #endif // MAINWINDOW_H
