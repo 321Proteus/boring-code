@@ -8,7 +8,7 @@
 #include <map>
 
 #include "address.hpp"
-#include "core/block.hpp"
+#include "block.hpp"
 
 class BCBlock;
 
@@ -61,6 +61,10 @@ public:
 
     void apply_prevs_nexts();
     void apply_trace(const std::vector<uint32_t>& trace);
+
+    const float HOT_COLD_THRESHOLD = 0.2;
+
+    void find_hot_cold_blocks();
 
     BCDatabase() = default;
 
