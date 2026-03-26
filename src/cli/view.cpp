@@ -6,8 +6,9 @@
 void ConsoleViewModel::show_details(const BCBlock::Details& details) {
 
     std::cout << '\n';
-    std::cout << "Name:     " << details.name << '\n';
-    std::cout << "ID:       " << details.id << '\n';
+    std::cout << "Name: \t\t" << details.name << '\n';
+    std::cout << "ID: \t\t" << details.id << '\n';
+    std::cout << "Usage count: \t" << details.usage_count.value << '\n';
     std::cout << '\n';
     std::cout << "Locations (" << details.locs.size() << "):\n";
 

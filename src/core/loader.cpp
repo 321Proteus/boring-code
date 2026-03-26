@@ -19,10 +19,16 @@ typedef std::vector<std::uint32_t> Trace;
 
 Trace build_chains(BCDatabase& db, const std::vector<BCAddr>& raw, BCStatusViewModel& sv) {
 
+    sv.setup_job("Mapping successors", raw.size());
     for (size_t i=0;i<raw.size()-1;i++) {
         db.next_map[raw[i]][raw[i+1]]++;
         db.prev_map[raw[i+1]][raw[i]]++;
+        sv.update_job_progress(i);
     }
+    sv.update_job_progress(raw.size());
+
+    sv.setup_job("Scanning for constant successors", db.next_map.size());
+    uint64_t cs_progress = 0;
 
     std::map<BCAddr, BCAddr> glue;
     for (auto const& [src, targets] : db.next_map) {
@@ -30,7 +36,9 @@ Trace build_chains(BCDatabase& db, const std::vector<BCAddr>& raw, BCStatusViewM
             BCAddr dst = targets.begin()->first;
             if (db.prev_map[dst].size() == 1) glue[src] = dst;
         }
+        sv.update_job_progress(cs_progress++);
     }
+    sv.update_job_progress(db.next_map.size());
 
     std::unordered_map<BCAddr, std::string> blk_starts;
     int blk_id = 1;
@@ -39,6 +47,8 @@ Trace build_chains(BCDatabase& db, const std::vector<BCAddr>& raw, BCStatusViewM
     for (auto const& [src, dst] : glue) {
         has_incoming_glue[dst] = true;
     }
+
+    sv.setup_job("Generating block definitions", glue.size());
 
     for (auto const& [src, dst] : glue) {
         if (!has_incoming_glue[src]) {
@@ -62,8 +72,11 @@ Trace build_chains(BCDatabase& db, const std::vector<BCAddr>& raw, BCStatusViewM
             }
 
         }
+        sv.update_job_progress(blk_id);
     }
+    sv.update_job_progress(glue.size());
 
+    sv.setup_job("Optimizing trace", raw.size());
     Trace trace;
     
     for (size_t i = 0; i < raw.size(); ) {
@@ -88,6 +101,7 @@ Trace build_chains(BCDatabase& db, const std::vector<BCAddr>& raw, BCStatusViewM
             }
             i++;
         }
+        sv.update_job_progress(i);
     }
 
     sv.update_job_progress(raw.size());
@@ -115,9 +129,7 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
 
     BCDatabase db;
     
-    sv.setup_job("Building blocks", raw_data.size());
     Trace t1 = build_chains(db, raw_data, sv);
-    sv.update_job_progress(raw_data.size());
 
     std::cout
         << "\nAnalysis done with " << db.blocks.size() << " unique addrs and "
@@ -125,6 +137,8 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
 
     db.apply_trace(t1);
     db.apply_prevs_nexts();
+
+    db.find_hot_cold_blocks();
 
     std::ofstream out("final_timeline.txt");
     for (const auto& s : t1) out << s << "\n";
