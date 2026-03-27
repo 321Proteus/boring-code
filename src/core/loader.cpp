@@ -93,10 +93,12 @@ Trace build_chains(BCDatabase& db, const std::vector<BCAddr>& raw, BCStatusViewM
             std::string hex_addr = to_hex(curr);
 
             try {
-                trace.push_back(blk_id);
                 db.insert<BCBasicBlock>(blk_id, hex_addr);
+                trace.push_back(blk_id);
                 blk_id++;
             } catch (std::runtime_error e) {
+                BCBlock* to_replace = db.getByName(hex_addr);
+                if (to_replace) trace.push_back(to_replace->get_id());
                 // printf("Error while inserting block %s (ID %d): %s\n", hex_addr.c_str(), blk_id, e.what());
             }
             i++;
@@ -146,7 +148,7 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
     std::ofstream dict_out("structure_dictionary.txt");
     for (auto const& [id, block] : db.blocks) {
         dict_out << block->name << ": ";
-        for (const auto& c : block->locs) dict_out << c << " ";
+        for (const auto& c : block->locs) dict_out << to_hex(c) << " ";
         dict_out << "\n";
     }
 
