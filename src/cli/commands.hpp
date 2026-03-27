@@ -2,7 +2,6 @@
 
 #include "core/block.hpp"
 #include "core/database.hpp"
-#include "core/loader.hpp"
 #include <cstddef>
 #include <iostream>
 #include <any>
@@ -109,12 +108,52 @@ public:
 
 };
 
+class TraceCommand : public Command {
+public:
+
+    int exec(const CommandArgs& args, Session& sess) override {
+        BCDatabase* db = sess.database.get();
+        if (!db) {
+            std::cerr << "No database loaded!" << std::endl;
+            return 0x3;
+        }
+        
+        uint64_t start = 0;
+        uint64_t n = 10;
+
+        if (start >= db->trace.size()) {
+            std::cerr << "Invalid trace offset!" << std::endl;
+            return 0x6;
+        } else {
+            for (int i=0;i<n;i++) {
+                uint64_t offset = start + i;
+                if (offset >= db->trace.size()) {
+                    std::cout << "End of database\n";
+                    break;
+                } else {
+                    std::cout << offset << '\t' << db->getById(db->trace[offset])->name << '\n';
+                }
+            }
+        }
+
+        return 0x0;
+
+    }
+
+    std::any output() const override {
+        return NULL;
+    }
+
+    const std::string helpText = "Display a specific amount of blocks from the code execution trace at a given offset";
+};
+
 const std::map<std::string, std::string> short_names = {
     { "lt", "loadtrace" },
     { "lb", "loadbinary" },
     { "c", "clear" },
     { "b", "block" },
     { "s", "save" },
+    { "tr", "trace" }
     // { "h", "help" }
 };
 
@@ -122,6 +161,7 @@ const std::map<std::string, std::shared_ptr<Command>> commands = {
     { "loadtrace", std::make_shared<LoadDatabaseCommand>() },
     { "clear", std::make_shared<ClearCommand>() },
     { "block", std::make_shared<BlockDetailsCommand>() },
+    { "trace", std::make_shared<TraceCommand>() }
     // { "help", std::make_shared<HelpCommand>() }
 };
 
