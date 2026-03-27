@@ -1,6 +1,5 @@
 #pragma once
 
-#include "app/trace_model.hpp"
 #include "app/view.hpp"
 #include "data/session.hpp"
 #include "ui/view.hpp"
@@ -26,7 +25,7 @@ public slots:
         std::cout << "Started loading " << path.toStdString() << std::endl;
         session.load_trace(path.toStdString(), proxy);
         if (cancelled) return;
-        emit traceReady(precompute_trace(*session.database.get(), *proxy));
+        emit traceReady(BCTraceViewModel::precompute_trace(*session.database.get(), *proxy));
         emit finished();
     }
     void request_cancel() { cancelled = true; }
