@@ -1,6 +1,7 @@
 #include "view.hpp"
 #include "core/block.hpp"
 #include "core/util/util.hpp"
+#include "ui/view.hpp"
 #include <iostream>
 
 void ConsoleViewModel::show_details(const BCBlock::Details& details) {
@@ -40,7 +41,7 @@ void ConsoleViewModel::show_details(const BCBasicBlock& details) {
 
 }
 
-void ConsoleViewModel::show_trace() const {
+void ConsoleViewModel::show_trace(std::shared_ptr<std::vector<BCTraceEntry>> trace) const {
     
 }
 

@@ -140,7 +140,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QListWidget" name="TraceView">
+       <widget class="QListView" name="TraceView">
         <property name="styleSheet">
          <string notr="true">QListWidget::item {
     height: 15px;
@@ -161,7 +161,7 @@
      <x>0</x>
      <y>0</y>
      <width>840</width>
-     <height>22</height>
+     <height>30</height>
     </rect>
    </property>
   </widget>

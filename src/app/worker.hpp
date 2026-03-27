@@ -1,10 +1,14 @@
 #pragma once
 
+#include "app/trace_model.hpp"
 #include "app/view.hpp"
 #include "data/session.hpp"
+#include "ui/view.hpp"
 #include <QObject>
 #include <atomic>
 #include <iostream>
+#include <memory>
+#include <vector>
 
 class BCWorker : public QObject {
     Q_OBJECT
@@ -14,6 +18,7 @@ public:
 
 signals:
     void finished();
+    void traceReady(std::shared_ptr<std::vector<BCTraceEntry>>);
     void error(QString msg);
 
 public slots:
@@ -21,6 +26,7 @@ public slots:
         std::cout << "Started loading " << path.toStdString() << std::endl;
         session.load_trace(path.toStdString(), proxy);
         if (cancelled) return;
+        emit traceReady(precompute_trace(*session.database.get(), *proxy));
         emit finished();
     }
     void request_cancel() { cancelled = true; }

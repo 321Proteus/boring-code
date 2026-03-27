@@ -23,7 +23,7 @@ public:
     void loadTraceAsync(QString path);
 
 private slots:
-    void onSelectionChanged();
+    void onSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected);
 
 protected:
     void dragEnterEvent(QDragEnterEvent* event) override;

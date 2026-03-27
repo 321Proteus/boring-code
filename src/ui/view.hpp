@@ -1,6 +1,13 @@
 #pragma once
 
 #include "core/block.hpp"
+#include <memory>
+#include <vector>
+
+typedef struct {
+    std::string name;
+    uint32_t id;
+} BCTraceEntry;
 
 typedef struct {
     std::string name;
@@ -10,7 +17,7 @@ typedef struct {
 
 class BCTraceViewModel {
 public:
-    virtual void show_trace() const = 0;
+    virtual void show_trace(std::shared_ptr<std::vector<BCTraceEntry>> trace) const = 0;
 };
 
 class BCDetailsViewModel {

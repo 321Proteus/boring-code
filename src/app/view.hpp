@@ -2,14 +2,14 @@
 
 #include "core/block.hpp"
 #include "ui/view.hpp"
-#include <QListWidget>
+#include <QListView>
 #include <QTreeWidget>
 #include <QProgressBar>
 #include <QString>
 #include <QLabel>
 
 struct QtUI {
-    QListWidget* trace_view;
+    QListView* trace_view;
     QTreeWidget* details_view;
     QProgressBar* progress_bar;
     QLabel* progress_text;
@@ -27,7 +27,7 @@ public:
 
     QtViewModel(const QtUI& ui) : ui(ui) {}
 
-    void show_trace() const;
+    void show_trace(std::shared_ptr<std::vector<BCTraceEntry>> trace) const;
     void show_details(const BCBlock::Details& details);
     void show_details(const BCBasicBlock& details);
     void setup_job(const std::string name, uint64_t size);

@@ -11,7 +11,7 @@ class ConsoleViewModel :
 private:
     BCJob job;
 public:
-    void show_trace() const;
+    void show_trace(std::shared_ptr<std::vector<BCTraceEntry>> trace) const;
     void show_details(const BCBlock::Details& details);
     void show_details(const BCBasicBlock& details);
     void setup_job(const std::string name, uint64_t size);

@@ -1,4 +1,5 @@
 #include "view.hpp"
+#include "trace_model.hpp"
 #include "core/block.hpp"
 #include "core/util/util.hpp"
 #include <cstdint>
@@ -75,8 +76,10 @@ void QtViewModel::show_details(const BCBasicBlock& details)  {
 
 }
 
-void QtViewModel::show_trace() const {
-    
+void QtViewModel::show_trace(std::shared_ptr<std::vector<BCTraceEntry>> trace) const {
+    auto model = new TraceModel(trace, ui.trace_view);
+    ui.trace_view->setModel(model);
+    ui.trace_view->setUniformItemSizes(true);
 }
 
 void QtViewModel::setup_job(const std::string name, uint64_t size) {

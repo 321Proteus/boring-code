@@ -13,6 +13,8 @@
 #include <QDropEvent>
 #include <QThread>
 #include <QElapsedTimer>
+#include <QItemSelectionModel>
+#include <vector>
 
 MainWindow::MainWindow(Session& sess, QWidget *parent)
     : QMainWindow(parent), session(sess)
@@ -34,9 +36,6 @@ MainWindow::MainWindow(Session& sess, QWidget *parent)
     session.trace_view = view.get();
     session.details_view = view.get();
     session.status_view = view.get();
-
-    connect(ui->TraceView, &QListWidget::itemSelectionChanged,
-            this, &MainWindow::onSelectionChanged);
 }
 
 MainWindow::~MainWindow()
@@ -59,19 +58,17 @@ void MainWindow::dropEvent(QDropEvent* event) {
 
 }
 
-void MainWindow::onSelectionChanged() {
-
-    auto selected = ui->TraceView->selectedItems();
+void MainWindow::onSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected) {
+    auto indexes = ui->TraceView->selectionModel()->selectedIndexes();
     BCDatabase* db = this->session.database.get();
 
     if (selected.size() == 1) {
-
-        QString block_name = selected.first()->text();
-        BCBlock* block = db->getByName(block_name.toStdString());
+        QModelIndex index = indexes.first();
+        uint32_t block_id = index.data(Qt::UserRole).toUInt();
+        BCBlock* block = db->getById(block_id);
         this->session.details_view->show_details(db->generate_details(*block));
 
     } else {
-
         for (int i=0;i<ui->DetailsView->topLevelItemCount();i++) {
             auto item = ui->DetailsView->topLevelItem(i);
             item->takeChildren();
@@ -105,12 +102,18 @@ void MainWindow::loadTraceAsync(QString path) {
     connect(worker_thread, &QThread::started,
         worker, &BCWorker::load_trace);
 
+    connect(worker, &BCWorker::traceReady,
+    this, [this](std::shared_ptr<std::vector<BCTraceEntry>> trace) {
+        session.trace_view->show_trace(trace);
+        connect(ui->TraceView->selectionModel(), &QItemSelectionModel::selectionChanged,
+                this, &MainWindow::onSelectionChanged);
+    });
+
     connect(worker, &BCWorker::finished,
         worker_thread, [this, timer]() {
             std::cout << "Worker thread quit peacefully after " << timer.elapsed() << " miliseconds" << std::endl;
             ui->ProgressBar->setValue(0);
             ui->ProgressText->setText("Idle");
-            session.trace_view->show_trace();
             worker_thread->quit();  
         } );
 
