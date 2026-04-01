@@ -17,9 +17,9 @@ file(GLOB_RECURSE CORE_SOURCES
 )
 
 file(GLOB_RECURSE APP_COMMON_SOURCES
-    src/shared/*.cpp
-    src/shared/*.hpp
-    src/shared/*.h
+    src/ui/*.cpp
+    src/ui/*.hpp
+    src/ui/*.h
 )
 
 file(GLOB_RECURSE APP_QT_SOURCES
@@ -37,6 +37,7 @@ file(GLOB_RECURSE APP_CLI_SOURCES
 
 add_executable(BoringCodeCLI
     ${APP_CLI_SOURCES}
+    ${APP_COMMON_SOURCES}
     ${CORE_SOURCES}
 )
 
@@ -44,6 +45,7 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
 add_executable(BoringCode
     ${APP_QT_SOURCES}
+    ${APP_COMMON_SOURCES}
     ${CORE_SOURCES}
 )
 
