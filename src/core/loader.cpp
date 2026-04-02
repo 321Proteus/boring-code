@@ -12,7 +12,6 @@
 #include <string>
 #include <vector>
 #include "ui/view.hpp"
-#include "util/util.hpp"
 
 #include "database.hpp"
 #include "block.hpp"
@@ -145,8 +144,7 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
     uint32_t hash; f.read(reinterpret_cast<char*>(&hash), 4);
     uint64_t base; f.read(reinterpret_cast<char*>(&base), 8);
 
-    
-    sv.setup_job("Loading trace", size / (is_x64 ? 8 : 4));
+    sv.setup_job("Loading trace", (size - (uint64_t)f.tellg()) / (is_x64 ? 8 : 4));
     int read = 0;
 
     if (is_x64) {

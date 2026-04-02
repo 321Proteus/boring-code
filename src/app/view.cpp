@@ -1,7 +1,6 @@
 #include "view.hpp"
 #include "trace_model.hpp"
 #include "core/block.hpp"
-#include "core/util/util.hpp"
 #include <cstdint>
 #include <QString>
 #include <QMessageBox>
