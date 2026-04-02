@@ -3,30 +3,34 @@
 #include "address.hpp"
 #include <algorithm>
 #include <cstdint>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
 void BCDatabase::apply_prevs_nexts() {
+
+    std::unordered_map<BCAddr, int> starts;
+    for (auto const& [id, block] : blocks) starts[block->first_loc()] = id;
+
     for (auto const& [id, block] : blocks) {
 
         BCAddr first = block->first_loc();
         BCAddr last = block->last_loc();
 
-        std::map<BCAddr, int> nexts = next_map[last];
-        std::map<BCAddr, int> prevs = prev_map[first];
-
-        for (auto const& [next, count] : nexts) {
-            for (auto const& [other_id, other_block] : blocks) {
-                if (next == other_block->first_loc() && id != other_id) {
-                    block->nexts[other_id] = count;
+        if (next_map.count(last)) {
+            for (auto const& [next_addr, count] : next_map[last]) {
+                auto it = starts.find(next_addr);
+                if (it != starts.end() && it->second != id) {
+                    block->nexts[it->second] = count;
                 }
             }
         }
-
-        for (auto const& [prev, count] : prevs) {
-            for (auto const& [other_id, other_block] : blocks) {
-                if (prev == other_block->first_loc() && id != other_id) {
-                    block->prevs[other_id] = count;
+        
+        if (prev_map.count(first)) {
+            for (auto const& [prev_addr, count] : prev_map[first]) {
+                auto it = starts.find(prev_addr);
+                if (it != starts.end() && it->second != id) {
+                    block->prevs[it->second] = count;
                 }
             }
         }
