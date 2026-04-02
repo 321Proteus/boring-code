@@ -2,8 +2,8 @@
 #include <iostream>
 #include <memory>
 #include "./ui_mainwindow.h"
-#include "../core/database.hpp"
-#include "../core/block.hpp"
+#include "core/database.hpp"
+#include "core/block.hpp"
 #include "view.hpp"
 #include "worker.hpp"
 #include "data/session.hpp"
