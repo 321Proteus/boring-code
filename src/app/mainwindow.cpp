@@ -4,6 +4,7 @@
 #include "./ui_mainwindow.h"
 #include "core/database.hpp"
 #include "core/block.hpp"
+#include "core/loader.hpp"
 #include "view.hpp"
 #include "worker.hpp"
 #include "data/session.hpp"
@@ -54,7 +55,19 @@ void MainWindow::dropEvent(QDropEvent* event) {
     if (urls.isEmpty()) return;
     QString path = urls.first().toLocalFile();
     if (path.isEmpty()) return;
-    loadTraceAsync(path);
+    
+    BCFileType type = detect_type(path.toStdString());
+    switch (type) {
+        case BCFileType::BCTRACE:
+            loadTraceAsync(path);
+            break;
+        case BCFileType::UNKNOWN:
+            session.status_view->show_error("The provided file is not a valid BoringCode trace!");
+            break;
+        default: // TODO handle other file types
+            break;
+
+    }
 
 }
 

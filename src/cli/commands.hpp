@@ -11,6 +11,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include "core/loader.hpp"
 #include "data/session.hpp"
 
 struct CommandArgs {
@@ -31,24 +32,31 @@ public:
     virtual ~Command() = default;
 };
 
-class LoadDatabaseCommand : public Command {
+class LoadTraceCommand : public Command {
 public:
 
     int exec(const CommandArgs& args, Session& sess) override {
 
-        if (args.main_arg == "") {
+        std::string path = args.main_arg;
+
+        if (path == "") {
             std::cerr << "No path has been provided!" << std::endl;
             return 0x1;
         }
 
-        if (!std::filesystem::exists(args.main_arg)) {
+        if (!std::filesystem::exists(path)) {
             std::cerr << "Could not find the requested file!" << std::endl;
             return 0x2;
         }
 
+        if (detect_type(path) != BCFileType::BCTRACE) {
+            std::cerr << "The provided file is not a valid BoringCode trace!" << std::endl;
+            return 0x7;
+        }
+
         auto sv = sess.status_view;
 
-        sess.load_trace(args.main_arg);
+        sess.load_trace(path);
         sess.set("db_loaded", 1);
         return 0x0;
     }
@@ -158,7 +166,7 @@ const std::map<std::string, std::string> short_names = {
 };
 
 const std::map<std::string, std::shared_ptr<Command>> commands = {
-    { "loadtrace", std::make_shared<LoadDatabaseCommand>() },
+    { "loadtrace", std::make_shared<LoadTraceCommand>() },
     { "clear", std::make_shared<ClearCommand>() },
     { "block", std::make_shared<BlockDetailsCommand>() },
     { "trace", std::make_shared<TraceCommand>() }

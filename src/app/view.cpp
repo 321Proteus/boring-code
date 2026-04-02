@@ -4,6 +4,8 @@
 #include "core/util/util.hpp"
 #include <cstdint>
 #include <QString>
+#include <QMessageBox>
+#include <qobject.h>
 
 void QtViewModel::show_details(const BCBlock::Details& details) {
 
@@ -94,5 +96,5 @@ void QtViewModel::update_job_progress(uint64_t progress) {
 }
 
 void QtViewModel::show_error(const std::string& msg) {
-
+    QMessageBox::warning(this->ui.trace_view->parentWidget(), "BoringCode error", QString::fromStdString(msg));
 }
