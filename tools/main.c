@@ -1,9 +1,18 @@
 #include <dr_api.h>
 #include <drmgr.h>
 #include <dr_events.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
 #include "dr_modules.h"
 #include "dr_tools.h"
 #include "header.h"
+
+#ifdef X64
+static const bool x64 = true;
+#else
+static const bool x64 = false;
+#endif
 
 #define CHUNK_SIZE 10000
 static void* log_mutex;
@@ -63,20 +72,23 @@ static void event_exit(void)
 
 DR_EXPORT void dr_client_main(client_id_t id, int argc, const char* argv[])
 {
+
+    bool custom_name = false;
+    char fname[64];
+    Header hdr;
+
+    for (int i=0;i<argc-1;i++) {
+        if (strcmp(argv[i], "-outfile") == 0) {
+            custom_name = true;
+            sprintf(fname, "%s", argv[i+1]);
+            break;
+        }
+    }
+
     drmgr_init();
     dr_set_client_name("BoringTool Tracer", "http://dynamorio.org/");
-
-    bool x64;
-#ifdef X64
-    x64 = true;
-#else
-    x64 = false;
-#endif
     
     log_mutex = dr_mutex_create();
-
-    char fname[32];
-    Header hdr;
 
     module_data_t *main_mod = dr_get_main_module();
 
@@ -85,12 +97,16 @@ DR_EXPORT void dr_client_main(client_id_t id, int argc, const char* argv[])
         dr_printf("Starting analysis of target %s\n", path);
 
         hdr = create_header(path, x64);
+        hdr.base = (uint64_t)main_mod->start;
 
-        sprintf(fname, "bcfunctions_%08x.bin", hdr.hash);
+        if (!custom_name) sprintf(fname, "bcfunctions_%08x.bin", hdr.hash);
         dr_free_module_data(main_mod);
     } else {
         hdr = create_header(NULL, x64);
-        sprintf(fname, "bcfunctions.bin");
+        hdr.base = 0;
+        dr_printf("Warning: Couldn't find the main module, which probably indicates a broken or obfuscated binary. \
+            Image base and CRC32 have been set to their default values.");
+        if (!custom_name) sprintf(fname, "bcfunctions.bin");
     }
 
     out_file = dr_open_file(fname, DR_FILE_WRITE_OVERWRITE | DR_FILE_ALLOW_LARGE);

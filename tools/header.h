@@ -5,12 +5,15 @@
 #include <stdbool.h>
 #include <zlib.h>
 
+#pragma pack(push, 1)
 typedef struct {
     char magic[4];
     uint8_t version;
     uint8_t arch;
     uint32_t hash;
+    uint64_t base;
 } Header;
+#pragma pack(pop)
 
 uint32_t compute_crc32(const char* path) {
 

@@ -137,27 +137,28 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
     std::ifstream f(path, std::ios::binary);
 
     f.seekg(0, std::ios::end);
-    sv.setup_job("Loading trace", f.tellg() / sizeof(BCAddr));
-
+    uint64_t size = f.tellg();
     f.seekg(4, std::ios::beg);
 
     uint8_t version; f.read(reinterpret_cast<char*>(&version), 1);
     bool is_x64; f.read(reinterpret_cast<char*>(&is_x64), 1);
+    uint32_t hash; f.read(reinterpret_cast<char*>(&hash), 4);
+    uint64_t base; f.read(reinterpret_cast<char*>(&base), 8);
 
-    f.seekg(12, std::ios::beg);
-
+    
+    sv.setup_job("Loading trace", size / (is_x64 ? 8 : 4));
     int read = 0;
 
     if (is_x64) {
         uint64_t a;
         while (f.read((char*)&a, sizeof(uint64_t))) {
-            raw_data.push_back(a);
+            raw_data.push_back(a - base);
             sv.update_job_progress(read++);
         }
     } else {
         uint32_t a;
         while (f.read((char*)&a, sizeof(uint32_t))) {
-            raw_data.push_back(a);
+            raw_data.push_back(a - base);
             sv.update_job_progress(read++);
         }
     }
@@ -165,6 +166,8 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
     BCDatabase db;
     
     Trace t1 = build_chains(db, raw_data, sv);
+
+    printf("Architecture: %s \nHash: %04X \nBase: %08lX", (is_x64 ? "x64" : "x86"), hash, base);
 
     std::cout
         << "\nAnalysis done with " << db.blocks.size() << " unique addrs and "
@@ -186,6 +189,5 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
     }
 
     std::cout << "Output trace saved." << std::endl;
-
     return db;
 }
