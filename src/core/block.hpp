@@ -82,7 +82,7 @@ public:
 
     BCBasicBlock(uint32_t id, std::string address) :
         BCBlock(id, address, {}) {
-            locs.push_back(static_cast<BCAddr>(std::stoi(address, 0, 16)));
+            locs.push_back(static_cast<BCAddr>(std::stoull(address, 0, 16)));
         }
 
 };

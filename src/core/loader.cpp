@@ -1,4 +1,7 @@
+#include "loader.hpp"
+#include <cstdint>
 #include <cstdio>
+#include <ios>
 #include <ostream>
 #include <stdexcept>
 #include <unordered_map>
@@ -14,6 +17,23 @@
 #include "database.hpp"
 #include "block.hpp"
 #include "address.hpp"
+
+BCFileType detect_type(const std::string& path) {
+    std::ifstream f(path, std::ios::binary);
+    if (!f) return BCFileType::UNKNOWN;
+
+    char h[4];
+    f.read(h, 4);
+
+    if (h[0] == 0x7F && h[1] == 'E' && h[2] == 'L' && h[3] == 'F')
+        return BCFileType::ELF;
+    if (h[0] == 'M' && h[1] == 'Z')
+        return BCFileType::PE;
+    if (h[0] == 'B' && h[1] == 'C' && h[3] == 'T')
+        return BCFileType::BCTRACE;
+
+    return BCFileType::UNKNOWN;
+}
 
 typedef std::vector<std::uint32_t> Trace;
 
@@ -116,17 +136,30 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
     std::vector<BCAddr> raw_data;
     std::ifstream f(path, std::ios::binary);
 
-
     f.seekg(0, std::ios::end);
     sv.setup_job("Loading trace", f.tellg() / sizeof(BCAddr));
 
-    f.seekg(0, std::ios::beg);
+    f.seekg(4, std::ios::beg);
 
-    BCAddr a;
+    uint8_t version; f.read(reinterpret_cast<char*>(&version), 1);
+    bool is_x64; f.read(reinterpret_cast<char*>(&is_x64), 1);
+
+    f.seekg(12, std::ios::beg);
+
     int read = 0;
-    while(f.read((char*)&a, sizeof(BCAddr))) {
-        raw_data.push_back(a);
-        sv.update_job_progress(read++);
+
+    if (is_x64) {
+        uint64_t a;
+        while (f.read((char*)&a, sizeof(uint64_t))) {
+            raw_data.push_back(a);
+            sv.update_job_progress(read++);
+        }
+    } else {
+        uint32_t a;
+        while (f.read((char*)&a, sizeof(uint32_t))) {
+            raw_data.push_back(a);
+            sv.update_job_progress(read++);
+        }
     }
 
     BCDatabase db;
@@ -155,5 +188,4 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
     std::cout << "Output trace saved." << std::endl;
 
     return db;
-
 }

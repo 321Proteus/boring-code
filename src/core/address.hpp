@@ -1,13 +1,6 @@
 #pragma once
 
 #include <cstdint>
+#include <variant>
 
-// #define _PLATFORM_X64
-
-#ifndef _PLATFORM_X64
-typedef uint32_t BCAddr;
-constexpr std::size_t ADDR_SIZE = 4;
-#else
-typedef uint64_t BCAddr;
-constexpr std::size_t ADDR_SIZE = 8;
-#endif
+using BCAddr = std::variant<uint32_t, uint64_t>;
