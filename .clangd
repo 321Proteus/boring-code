@@ -1,2 +1,4 @@
 CompileFlags:
   Remove: [-mno-direct-extern-access]
+Diagnostics:
+  Suppress: pragma-pack
