@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <dr_api.h>
 #include <drmgr.h>
 #include <dr_events.h>
@@ -8,7 +9,7 @@
 #include "dr_tools.h"
 #include "header.h"
 
-#ifdef X64
+#if defined(__x86_64__) || defined(_M_X64)
 static const bool x64 = true;
 #else
 static const bool x64 = false;
@@ -97,7 +98,7 @@ DR_EXPORT void dr_client_main(client_id_t id, int argc, const char* argv[])
         dr_printf("Starting analysis of target %s\n", path);
 
         hdr = create_header(path, x64);
-        hdr.base = (uint64_t)main_mod->start;
+        hdr.base = (uint64_t)(uintptr_t)main_mod->start;
 
         if (!custom_name) sprintf(fname, "bcfunctions_%08x.bin", hdr.hash);
         dr_free_module_data(main_mod);

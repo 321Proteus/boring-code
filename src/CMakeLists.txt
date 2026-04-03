@@ -4,6 +4,8 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+
 file(GLOB_RECURSE CORE_SOURCES
     core/*.cpp
     core/*.hpp
