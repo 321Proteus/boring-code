@@ -37,7 +37,6 @@ BCFileType detect_type(const std::string& path) {
 typedef std::vector<std::uint32_t> Trace;
 
 Trace build_chains(BCDatabase& db, const std::vector<BCAddr>& raw, BCStatusViewModel& sv) {
-
     sv.setup_job("Mapping successors", raw.size());
     for (size_t i=0;i<raw.size()-1;i++) {
         db.next_map[raw[i]][raw[i+1]]++;
@@ -53,6 +52,7 @@ Trace build_chains(BCDatabase& db, const std::vector<BCAddr>& raw, BCStatusViewM
     for (auto const& [src, targets] : db.next_map) {
         if (targets.size() == 1) {
             BCAddr dst = targets.begin()->first;
+            if (src == dst) continue;
             if (db.prev_map[dst].size() == 1) glue[src] = dst;
         }
         sv.update_job_progress(cs_progress++);
@@ -68,6 +68,7 @@ Trace build_chains(BCDatabase& db, const std::vector<BCAddr>& raw, BCStatusViewM
     }
 
     sv.setup_job("Generating block definitions", glue.size());
+    printf("Sizing: %lu, %lu\n", glue.size(), has_incoming_glue.size());
 
     for (auto const& [src, dst] : glue) {
         if (!has_incoming_glue[src]) {
@@ -140,32 +141,28 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
     f.seekg(4, std::ios::beg);
 
     uint8_t version; f.read(reinterpret_cast<char*>(&version), 1);
-    bool is_x64; f.read(reinterpret_cast<char*>(&is_x64), 1);
+    uint8_t arch; f.read(reinterpret_cast<char*>(&arch), 1);
+    bool is_x64 = (arch == 1);
     uint32_t hash; f.read(reinterpret_cast<char*>(&hash), 4);
-    uint64_t base; f.read(reinterpret_cast<char*>(&base), 8);
+    BCAddr base; f.read(reinterpret_cast<char*>(&base), 8);
 
     sv.setup_job("Loading trace", (size - (uint64_t)f.tellg()) / (is_x64 ? 8 : 4));
     int read = 0;
 
-    if (is_x64) {
-        uint64_t a;
-        while (f.read((char*)&a, sizeof(uint64_t))) {
-            raw_data.push_back(a - base);
-            sv.update_job_progress(read++);
-        }
-    } else {
-        uint32_t a;
-        while (f.read((char*)&a, sizeof(uint32_t))) {
-            raw_data.push_back(a - base);
-            sv.update_job_progress(read++);
-        }
+    BCAddr a = 0;
+    while (f.read((char*)&a, (is_x64 ? 8 : 4))) {
+        raw_data.push_back(a);
+        sv.update_job_progress(read++);
+        a = 0;
     }
 
     BCDatabase db;
-    
-    Trace t1 = build_chains(db, raw_data, sv);
+    db.base_address = base;
+    db.crc_hash = hash;
 
-    printf("Architecture: %s \nHash: %04X \nBase: %08lX", (is_x64 ? "x64" : "x86"), hash, base);
+    printf("Architecture: %s \nHash: %04X \nBase: %08lX\n", (is_x64 ? "x64" : "x86"), hash, base);
+
+    Trace t1 = build_chains(db, raw_data, sv);
 
     std::cout
         << "\nAnalysis done with " << db.blocks.size() << " unique addrs and "
