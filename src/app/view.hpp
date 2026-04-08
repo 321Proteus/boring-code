@@ -28,6 +28,9 @@ public:
     QtViewModel(const QtUI& ui) : ui(ui) {}
 
     void show_trace(std::shared_ptr<std::vector<BCTraceEntry>> trace) const;
+    static std::shared_ptr<std::vector<BCTraceEntry>> precompute_trace(const BCDatabase &db, BCStatusViewModel &sv) {
+        return BCTraceViewModel::precompute_trace(db, sv);
+    }
     void show_details(const BCBlock::Details& details);
     void show_details(const BCBasicBlock& details);
     void setup_job(const std::string name, uint64_t size);

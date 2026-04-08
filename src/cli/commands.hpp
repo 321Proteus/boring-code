@@ -10,9 +10,11 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <variant>
 #include <vector>
 #include "core/loader.hpp"
 #include "data/session.hpp"
+#include "core/overload.hpp"
 
 struct CommandArgs {
     std::string main_arg;
@@ -80,7 +82,7 @@ public:
         }
 
         BCDatabase* db = sess.database.get();
-        BCBlock* block = db->getByName(args.main_arg);
+        BCBlock* block = db->getBlockByName(args.main_arg);
 
         if (!block) {
             std::cerr << "Block not found!" << std::endl;
@@ -129,6 +131,8 @@ public:
         uint64_t start = 0;
         uint64_t n = 10;
 
+        const bool TRACE_COLLAPSE_LOOP = false;
+
         if (start >= db->trace.size()) {
             std::cerr << "Invalid trace offset!" << std::endl;
             return 0x6;
@@ -139,7 +143,22 @@ public:
                     std::cout << "End of database\n";
                     break;
                 } else {
-                    std::cout << offset << '\t' << db->getById(db->trace[offset])->name << '\n';
+                    TraceStep step = db->trace.steps[offset];
+                    std::visit(Overload {
+                        [&](uint32_t blk_id) {
+                            std::cout << offset << '\t' << db->getBlockById(blk_id)->name << '\n';
+                        },
+                        [&](BCLoopInstance loop) {
+                            if (TRACE_COLLAPSE_LOOP) {
+                                std::cout << offset << '\t' << db->getLoopById(loop.loop_id)->name
+                                    << " (x" << loop.iterations << ")\n"; 
+                            } else {
+                                for (int iter=0;iter<loop.iterations && i<n;iter++,i++) {
+                                    std::cout << offset << '\t' << db->getLoopById(loop.loop_id)->name << '\n';
+                                }
+                            }
+                        }
+                    }, step);
                 }
             }
         }

@@ -1,5 +1,10 @@
 #include "view.hpp"
+#include "core/block.hpp"
 #include "core/database.hpp"
+#include "core/loader.hpp"
+#include "core/overload.hpp"
+#include <string>
+#include <variant>
 
 std::shared_ptr<std::vector<BCTraceEntry>> BCTraceViewModel::precompute_trace(const BCDatabase& db, BCStatusViewModel& sv) {
     const auto& tr = db.trace;
@@ -10,8 +15,16 @@ std::shared_ptr<std::vector<BCTraceEntry>> BCTraceViewModel::precompute_trace(co
 
     sv.setup_job("Precomputing UI trace entries", size);
     for (uint64_t i=0;i<size;i++) {
-        uint32_t id = tr[i];
-        trace_list->push_back({ db.getById(id)->name, id });
+        TraceStep step = tr.steps[i];
+        std::visit(Overload {
+            [&](uint32_t blk_id) {
+                trace_list->push_back({ db.getBlockById(blk_id)->name, blk_id });
+            },
+            [&](BCLoopInstance li) {
+                BCLoop* loop = db.getLoopById(li.loop_id);
+                trace_list->push_back({ loop->name + " (x" + std::to_string(li.iterations) + ")", li.loop_id });
+            }
+        }, step);
         sv.update_job_progress(i);
     }
     sv.update_job_progress(size);

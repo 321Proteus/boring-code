@@ -54,7 +54,6 @@ void QtViewModel::show_details(const BCBlock::Details& details) {
     locs_widget->takeChildren();
 
     QList<QTreeWidgetItem *> locs;
-
     for (const BCAddr& loc : details.locs) {
 
         QTreeWidgetItem* child = new QTreeWidgetItem();
@@ -70,6 +69,44 @@ void QtViewModel::show_details(const BCBlock::Details& details) {
     }
 
     locs_widget->addChildren(locs);
+
+    QTreeWidgetItem* prevs_widget = ui.details_view->topLevelItem(5);
+    prevs_widget->setText(0, "Predecessors");
+    prevs_widget->setText(
+        1,
+        QString::number(details.prevs.size())
+    );
+
+    prevs_widget->takeChildren();
+
+    QList<QTreeWidgetItem *> prevs;
+    for (const Neighbor& prev : details.prevs) {
+        QTreeWidgetItem* child = new QTreeWidgetItem();
+        child->setText(0, QString("%1 (x%2)").arg(prev.name).arg(prev.count));
+        prevs.append(child);
+        child->setData(0, Qt::UserRole, QVariant::fromValue(prev.name));
+    }
+
+    prevs_widget->addChildren(prevs);
+
+    QTreeWidgetItem* nexts_widget = ui.details_view->topLevelItem(6);
+    nexts_widget->setText(0, "Successors");
+    nexts_widget->setText(
+        1,
+        QString::number(details.nexts.size())
+    );
+
+    nexts_widget->takeChildren();
+
+    QList<QTreeWidgetItem *> nexts;
+    for (const Neighbor& next : details.nexts) {
+        QTreeWidgetItem* child = new QTreeWidgetItem();
+        child->setText(0, QString("%1 (x%2)").arg(next.name).arg(next.count));
+        nexts.append(child);
+        child->setData(0, Qt::UserRole, QVariant::fromValue(next.name));
+    }
+
+    nexts_widget->addChildren(nexts);
 
 }
 

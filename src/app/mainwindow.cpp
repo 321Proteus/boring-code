@@ -78,7 +78,7 @@ void MainWindow::onSelectionChanged(const QItemSelection& selected, const QItemS
     if (selected.size() == 1) {
         QModelIndex index = indexes.first();
         uint32_t block_id = index.data(Qt::UserRole).toUInt();
-        BCBlock* block = db->getById(block_id);
+        BCBlock* block = db->getBlockById(block_id);
         this->session.details_view->show_details(db->generate_details(*block));
 
     } else {

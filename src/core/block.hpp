@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <map>
 
+#include "object.hpp"
 #include "address.hpp"
 
 class BCDatabase;
@@ -22,12 +23,9 @@ struct RankedValue {
     double percentile; // -1.0 means not applied
 };
 
-class BCBlock {
-private:
-    uint32_t id;
+class BCBlock : public BCObject {
 public:
 
-    std::string name;
     std::vector<BCAddr> locs;
 
     RankedValue<uint32_t> instr_count;
@@ -38,10 +36,6 @@ public:
 
     virtual size_t loc_count() const {
         return locs.size();
-    }
-
-    uint32_t get_id() const {
-        return id;
     }
 
     BCAddr first_loc() const {
@@ -56,10 +50,8 @@ public:
         return std::find(locs.begin(), locs.end(), target) != locs.end();
     }
 
-    BCBlock() = default;
-
-    BCBlock(uint32_t id, std::string name, std::vector<BCAddr> locs):
-        id(id), name(name), locs(std::move(locs)) {}
+    BCBlock(uint32_t id, const std::string& name, std::vector<BCAddr> locs)
+        : BCObject(id, name), locs(std::move(locs)) {}
 
     typedef struct {
         uint32_t id;
@@ -76,13 +68,20 @@ public:
 class BCBasicBlock : public BCBlock {
 public:
 
-    size_t loc_count() const override {
-        return 1;
-    }
+    BCBasicBlock(uint32_t id, const std::string& address)
+        : BCBlock(id, address, { std::stoull(address, nullptr, 16) }) {}
 
-    BCBasicBlock(uint32_t id, std::string address) :
-        BCBlock(id, address, {}) {
-            locs.push_back(static_cast<BCAddr>(std::stoull(address, 0, 16)));
-        }
+};
+struct BCLoop : public BCObject {
+public:
+    std::vector<uint32_t> body;
 
+    template<typename Iterator>
+    BCLoop(uint32_t id, const std::string& name, Iterator begin, Iterator end)
+        : BCObject(id, name), body(begin, end) {}
+};
+
+struct BCLoopInstance {
+    uint32_t loop_id;
+    uint32_t iterations;
 };
