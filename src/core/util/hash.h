@@ -1,14 +1,5 @@
-#include <array>
 #include <cstdint>
 #include <cstring>
-
-static constexpr std::array<uint64_t, 5> MULTIPLIERS = {
-    2654435761ULL,
-    2246822519ULL,
-    3266489917ULL,
-    668265263ULL,
-    374761393ULL
-};
 
 static constexpr uint64_t MOD = (1ULL << 61) - 1;
 
@@ -21,7 +12,7 @@ inline uint64_t modm(uint64_t a) {
 inline uint64_t hash_window(const uint32_t* ptr, int w) {
     uint64_t h = 0;
     for (int i=0;i<w;i++)
-        h = modm(h + static_cast<uint64_t>(ptr[i]) * MULTIPLIERS[i]);
+        h = modm(h * 1315423911ULL + static_cast<uint64_t>(ptr[i]));
     return h;
 }
 
