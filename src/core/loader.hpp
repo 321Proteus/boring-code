@@ -9,6 +9,8 @@ enum class BCFileType {
     ELF, PE, BCTRACE, UNKNOWN
 };
 
+const uint32_t LOOP_ID_OFFSET = 0x80000000;
+
 using TraceStep = std::variant<uint32_t, BCLoopInstance>;
 
 inline uint32_t get_id(const TraceStep& step) {
@@ -30,6 +32,10 @@ public:
         steps.push_back(id);
     }
 
+    void push_loop(BCLoopInstance instance) {
+        steps.emplace_back(instance);
+    }
+    
     void push_loop(uint32_t loop_id, uint32_t iterations) {
         steps.emplace_back(BCLoopInstance { loop_id, iterations });
     }
