@@ -44,17 +44,17 @@ void QtViewModel::show_details(const BCBlock::Details& details) {
         QString::fromStdString("TODO")
     );
 
-    QTreeWidgetItem* locs_widget = ui.details_view->topLevelItem(4);
-    locs_widget->setText(0, "Locations");
-    locs_widget->setText(
+    QTreeWidgetItem* members_widget = ui.details_view->topLevelItem(4);
+    members_widget->setText(0, "Locations");
+    members_widget->setText(
         1,
-        QString::number(details.locs.size())
+        QString::number(details.members.size())
     );
 
-    locs_widget->takeChildren();
+    members_widget->takeChildren();
 
-    QList<QTreeWidgetItem *> locs;
-    for (const BCAddr& loc : details.locs) {
+    QList<QTreeWidgetItem *> members;
+    for (const BCAddr& loc : details.members) {
 
         QTreeWidgetItem* child = new QTreeWidgetItem();
 
@@ -64,11 +64,11 @@ void QtViewModel::show_details(const BCBlock::Details& details) {
         child->setFont(0, font);
 
         child->setText(0, QString::fromStdString(to_hex(loc)));
-        locs.append(child);
+        members.append(child);
         child->setData(0, Qt::UserRole, QVariant::fromValue(loc));
     }
 
-    locs_widget->addChildren(locs);
+    members_widget->addChildren(members);
 
     QTreeWidgetItem* prevs_widget = ui.details_view->topLevelItem(5);
     prevs_widget->setText(0, "Predecessors");

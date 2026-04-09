@@ -10,9 +10,9 @@ void ConsoleViewModel::show_details(const BCBlock::Details& details) {
     std::cout << "ID: \t\t" << details.id << '\n';
     std::cout << "Usage count: \t" << details.usage_count.value << '\n';
     std::cout << '\n';
-    std::cout << "Locations (" << details.locs.size() << "):\n";
+    std::cout << "Locations (" << details.members.size() << "):\n";
 
-    for (auto const& el : details.locs) 
+    for (auto const& el : details.members) 
         std::cout << "   " << to_hex(el) << '\n';
     std::cout << '\n';
     

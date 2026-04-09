@@ -9,7 +9,8 @@ enum class BCFileType {
     ELF, PE, BCTRACE, UNKNOWN
 };
 
-const uint32_t LOOP_ID_OFFSET = 0x80000000;
+const uint32_t BLOCK_ID_OFFSET  = 0x40000000;
+const uint32_t LOOP_ID_OFFSET   = 0x80000000;
 
 using TraceStep = std::variant<uint32_t, BCLoopInstance>;
 

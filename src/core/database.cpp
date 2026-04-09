@@ -15,14 +15,14 @@ void BCDatabase::apply_prevs_nexts() {
     std::unordered_map<BCAddr, int> starts;
     std::unordered_map<BCAddr, int> ends;
     for (auto const& [id, block] : blocks) {
-        starts[block->first_loc()] = id;
-        ends[block->last_loc()] = id;
+        starts[block->first_member()] = id;
+        ends[block->last_member()] = id;
     }
 
     for (auto const& [id, block] : blocks) {
 
-        BCAddr first = block->first_loc();
-        BCAddr last = block->last_loc();
+        BCAddr first = block->first_member();
+        BCAddr last = block->last_member();
 
         if (next_map.count(last)) {
             for (auto const& [next_addr, count] : next_map[last]) {
@@ -42,6 +42,10 @@ void BCDatabase::apply_prevs_nexts() {
             }
         }
     }
+
+    prev_map.clear();
+    next_map.clear();
+    
 }
 
 void BCDatabase::apply_trace(const BCTrace& trace) {
@@ -50,7 +54,7 @@ void BCDatabase::apply_trace(const BCTrace& trace) {
 
 BCBlock* BCDatabase::getByLoc(BCAddr address) const {
     for (auto const& [id, block] : blocks) {
-        if (block->check_loc(address)) return block.get();
+        if (block->check_member(address)) return block.get();
     }
     return nullptr;
 }
@@ -159,7 +163,7 @@ BCBlock::Details BCDatabase::generate_details(const BCBlock& block) const {
         .id=block.id,
         .name=block.name,
         .usage_count=block.usage_count,
-        .locs=block.locs, 
+        .members=block.members, 
         .prevs={},
         .nexts={}
     };
