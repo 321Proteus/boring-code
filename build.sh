@@ -1,6 +1,12 @@
 #!/bin/bash
 set -e
 
+if [[ "$1" == "--rebuild" ]] then
+    echo "Removing old build directories"
+    rm -rf build
+    rm -rf build64
+fi
+
 # 32-bit
 cmake -B build -S tools \
     -DCMAKE_BUILD_TYPE=Release \
