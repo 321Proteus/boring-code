@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <tuple>
 #include <type_traits>
 #include <unordered_map>
 #include <map>
@@ -31,22 +32,20 @@ public:
     
     BCTrace trace;
 
-    std::unordered_map<uint64_t, uint32_t> basic_blocks_addrs; 
+    std::unordered_map<BCAddr, uint32_t> basic_blocks_addrs; 
     std::unordered_map<uint64_t, std::vector<uint32_t>> loop_hashes;
     
     std::unordered_map<uint32_t, std::map<uint32_t, int>> next_map;
     std::unordered_map<uint32_t, std::map<uint32_t, int>> prev_map;
 
-    uint64_t base_address;
+    BCAddr base_address;
     uint32_t crc_hash;
 
     // Todo: get args from tuple and check before creating obj
     template<typename T, typename... Args>
     BCInsertionResult insert(uint32_t id, Args&&... args) {
 
-        std::unique_ptr<T> obj = std::make_unique<T>(id, std::forward<Args>(args)...);
-        std::string name = obj.get()->name;
-
+        // std::string name = obj.get()->name;
         // auto name_it = names.find(name);
         // if (name_it != names.end()) return { name_it->second, false };
         
@@ -54,33 +53,47 @@ public:
 
             auto it = blocks.find(id);
             if (it != blocks.end()) return { it->first, false };
+            
+            std::unique_ptr<T> obj = std::make_unique<T>(id, std::forward<Args>(args)...);
+            names[obj.get()->name] = id;
             blocks.emplace(id, std::move(obj));
 
         } else if constexpr (std::is_same_v<T, BCBasicBlock>) {
 
-            BCAddr addr = obj.get()->address;
+            BCAddr addr = std::get<0>(std::forward_as_tuple(args...));
             auto it = basic_blocks_addrs.find(addr);
             if (it != basic_blocks_addrs.end()) return { it->second, false };
 
+            std::unique_ptr<T> obj = std::make_unique<T>(id, std::forward<Args>(args)...);
+            names[obj.get()->name] = id;
             basic_blocks.emplace(id, std::move(obj));
             basic_blocks_addrs[addr] = id;
 
         } else if constexpr (std::is_same_v<T, BCLoop>) {
 
-            BCLoop* loop = obj.get();
-            uint64_t h = hash_window(loop->raw_body.data(), loop->raw_body.size());
-            auto loop_it = loop_hashes.find(h);
+            auto args_tuple = std::forward_as_tuple(args...);
+            auto begin = std::get<0>(args_tuple);
+            auto end = std::get<1>(args_tuple);
 
+            uint64_t h = hash_window(begin, end);
+            
+            auto loop_it = loop_hashes.find(h);
             if (loop_it != loop_hashes.end()) {
                 for (uint32_t match : loop_it->second) {
-                    if (loops.at(match)->raw_body == loop->raw_body)  return { match, false };
+                    if (loops.at(match)->raw_body == loops.at(match)->raw_body) {
+                        return { match, false };
+                    }
                 }
             }
-            for (uint32_t r : loop->raw_body) {
+
+            std::unique_ptr<T> obj = std::make_unique<T>(id, std::forward<Args>(args)...);
+            for (uint32_t r : obj.get()->raw_body) {
                 obj->body.push_back(resolve_object(r));
             }
-            loop_hashes[h].push_back(id);
+
+            names[obj.get()->name] = id;
             loops.emplace(id, std::move(obj));
+            loop_hashes[h].push_back(id);
 
         } else {
 
@@ -89,7 +102,6 @@ public:
 
         }
 
-        names[name] = id;
         return { id, true };
 
     }
@@ -136,7 +148,7 @@ public:
         return (it != loops.end()) ? it->second.get() : nullptr;
     }
 
-    void apply_prevs_nexts();
+    void apply_prevs_nexts(BCStatusViewModel& sv);
     void apply_trace(const BCTrace& trace);
 
     const float HOT_COLD_THRESHOLD = 0.2;
