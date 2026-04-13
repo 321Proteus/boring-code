@@ -1,42 +1,38 @@
 #include "view.hpp"
-#include "core/block.hpp"
+#include "core/object.hpp"
 #include "ui/view.hpp"
 #include <iostream>
 
-void ConsoleViewModel::show_details(const BCBlock::Details& details) {
+void ConsoleViewModel::show_details(const BCObject& object) {
 
     std::cout << '\n';
-    std::cout << "Name: \t\t" << details.name << '\n';
-    std::cout << "ID: \t\t" << details.id << '\n';
-    std::cout << "Usage count: \t" << details.usage_count.value << '\n';
+    std::cout << "Name: \t\t" << object.name << '\n';
+    std::cout << "ID: \t\t" << object.id << '\n';
+    std::cout << "Usage count: \t" << object.usage_count.value << '\n';
     std::cout << '\n';
-    std::cout << "Locations (" << details.members.size() << "):\n";
+    // std::cout << "Locations (" << details.members.size() << "):\n";
 
-    for (auto const& el : details.members) 
-        std::cout << "   " << to_hex(el) << '\n';
-    std::cout << '\n';
+    // for (auto const& el : details.members) 
+    //     std::cout << "   " << to_hex(el) << '\n';
+    // std::cout << '\n';
     
-    if (details.prevs.size() == 0) {
-        std::cout << "Predecessors: None\n";
-    } else {
-        std::cout << details.prevs.size() << " predecessors: \n";
-        for (const Neighbor& prev : details.prevs)
-            std::cout << "   " << prev.name << " (x" << prev.count << ")\n";
-        std::cout << '\n';
-    } 
+    // if (details.prevs.size() == 0) {
+    //     std::cout << "Predecessors: None\n";
+    // } else {
+    //     std::cout << details.prevs.size() << " predecessors: \n";
+    //     for (const Neighbor& prev : details.prevs)
+    //         std::cout << "   " << prev.name << " (x" << prev.count << ")\n";
+    //     std::cout << '\n';
+    // } 
 
-    if (details.nexts.size() == 0) {
-        std::cout << "Successors: None\n";
-    } else {
-        std::cout << details.nexts.size() << " successors: \n";
-        for (const Neighbor& next : details.nexts)
-            std::cout << "   " << next.name << " (x" << next.count << ")\n";
-        std::cout << '\n';
-    }
-
-}
-
-void ConsoleViewModel::show_details(const BCBasicBlock& details) {
+    // if (details.nexts.size() == 0) {
+    //     std::cout << "Successors: None\n";
+    // } else {
+    //     std::cout << details.nexts.size() << " successors: \n";
+    //     for (const Neighbor& next : details.nexts)
+    //         std::cout << "   " << next.name << " (x" << next.count << ")\n";
+    //     std::cout << '\n';
+    // }
 
 }
 

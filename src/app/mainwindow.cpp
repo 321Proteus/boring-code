@@ -5,6 +5,7 @@
 #include "core/database.hpp"
 #include "core/block.hpp"
 #include "core/loader.hpp"
+#include "core/object.hpp"
 #include "view.hpp"
 #include "worker.hpp"
 #include "data/session.hpp"
@@ -77,9 +78,9 @@ void MainWindow::onSelectionChanged(const QItemSelection& selected, const QItemS
 
     if (selected.size() == 1) {
         QModelIndex index = indexes.first();
-        uint32_t block_id = index.data(Qt::UserRole).toUInt();
-        BCBlock* block = db->getBlockById(block_id);
-        this->session.details_view->show_details(db->generate_details(*block));
+        uint32_t id = index.data(Qt::UserRole).toUInt();
+        BCObject* object = db->resolve_object(id);
+        this->session.details_view->show_details(*object);
 
     } else {
         for (int i=0;i<ui->DetailsView->topLevelItemCount();i++) {

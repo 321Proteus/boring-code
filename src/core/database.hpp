@@ -10,6 +10,7 @@
 
 #include "address.hpp"
 #include "block.hpp"
+#include "core/object.hpp"
 #include "loader.hpp"
 #include "ui/view.hpp"
 #include "util/hash.h"
@@ -30,22 +31,24 @@ public:
     
     BCTrace trace;
 
+    std::unordered_map<uint64_t, uint32_t> basic_blocks_addrs; 
     std::unordered_map<uint64_t, std::vector<uint32_t>> loop_hashes;
     
-    std::unordered_map<BCAddr, std::map<BCAddr, int>> next_map;
-    std::unordered_map<BCAddr, std::map<BCAddr, int>> prev_map;
+    std::unordered_map<uint32_t, std::map<uint32_t, int>> next_map;
+    std::unordered_map<uint32_t, std::map<uint32_t, int>> prev_map;
 
     uint64_t base_address;
     uint32_t crc_hash;
 
+    // Todo: get args from tuple and check before creating obj
     template<typename T, typename... Args>
     BCInsertionResult insert(uint32_t id, Args&&... args) {
 
         std::unique_ptr<T> obj = std::make_unique<T>(id, std::forward<Args>(args)...);
         std::string name = obj.get()->name;
 
-        auto name_it = names.find(name);
-        if (name_it != names.end()) return { name_it->second, false };
+        // auto name_it = names.find(name);
+        // if (name_it != names.end()) return { name_it->second, false };
         
         if constexpr (std::is_same_v<T, BCBlock>) {
 
@@ -55,21 +58,26 @@ public:
 
         } else if constexpr (std::is_same_v<T, BCBasicBlock>) {
 
-            auto it = basic_blocks.find(id);
-            if (it != basic_blocks.end()) return { it->first, false };
+            BCAddr addr = obj.get()->address;
+            auto it = basic_blocks_addrs.find(addr);
+            if (it != basic_blocks_addrs.end()) return { it->second, false };
+
             basic_blocks.emplace(id, std::move(obj));
+            basic_blocks_addrs[addr] = id;
 
         } else if constexpr (std::is_same_v<T, BCLoop>) {
 
             BCLoop* loop = obj.get();
-
-            uint64_t h = hash_window(loop->body.data(), loop->body.size());
+            uint64_t h = hash_window(loop->raw_body.data(), loop->raw_body.size());
             auto loop_it = loop_hashes.find(h);
 
             if (loop_it != loop_hashes.end()) {
                 for (uint32_t match : loop_it->second) {
-                    if (loops.at(match)->body == loop->body)  return { match, false };
+                    if (loops.at(match)->raw_body == loop->raw_body)  return { match, false };
                 }
+            }
+            for (uint32_t r : loop->raw_body) {
+                obj->body.push_back(resolve_object(r));
             }
             loop_hashes[h].push_back(id);
             loops.emplace(id, std::move(obj));
@@ -86,11 +94,26 @@ public:
 
     }
 
+    BCObject* resolve_object(uint32_t id) const {
+        if (id >= LOOP_ID_OFFSET) {
+            return loops.at(id - LOOP_ID_OFFSET).get();
+        } else if (id >= BLOCK_ID_OFFSET) {
+            return blocks.at(id - BLOCK_ID_OFFSET).get();
+        } else {
+            return basic_blocks.at(id).get();
+        }
+    }
+
     bool rename(uint32_t id, std::string newName);
 
     BCBlock* getBlockByName(const std::string& name) const {
         auto it = names.find(name);
         return (it != names.end()) ? getBlockById(it->second) : nullptr;
+    }
+
+    BCBasicBlock* getBasicBlockByName(const std::string& name) const {
+        auto it = names.find(name);
+        return (it != names.end()) ? getBasicBlockById(it->second) : nullptr;
     }
 
     BCLoop* getLoopByName(const std::string& name) const {
@@ -103,14 +126,15 @@ public:
         return (it != blocks.end()) ? it->second.get() : nullptr;
     }
 
+    BCBasicBlock* getBasicBlockById(uint32_t id) const {
+        auto it = basic_blocks.find(id);
+        return (it != basic_blocks.end()) ? it->second.get() : nullptr;
+    }
+
     BCLoop* getLoopById(uint32_t id) const {
         auto it = loops.find(id);
         return (it != loops.end()) ? it->second.get() : nullptr;
     }
-
-    BCBlock::Details generate_details(const BCBlock& block) const;
-
-    BCBlock* getByLoc(BCAddr address) const;
 
     void apply_prevs_nexts();
     void apply_trace(const BCTrace& trace);

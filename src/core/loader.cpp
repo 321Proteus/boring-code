@@ -1,4 +1,5 @@
 #include "loader.hpp"
+#include <cassert>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -7,11 +8,12 @@
 #include <unordered_map>
 #include <cstddef>
 #include <iostream>
-#include <map>
 #include <fstream>
 #include <string>
+#include <unordered_set>
 #include <variant>
 #include <vector>
+#include "core/object.hpp"
 #include "ui/view.hpp"
 #include "overload.hpp"
 
@@ -36,56 +38,82 @@ BCFileType detect_type(const std::string& path) {
     return BCFileType::UNKNOWN;
 }
 
-BCTrace build_chains(BCDatabase& db, const std::vector<BCAddr>& raw, BCStatusViewModel& sv) {
-    sv.setup_job("Mapping successors", raw.size());
-    for (size_t i=0;i<raw.size()-1;i++) {
-        db.next_map[raw[i]][raw[i+1]]++;
-        db.prev_map[raw[i+1]][raw[i]]++;
+std::vector<uint32_t> flatten(const BCTrace& t, bool blocks_only = false) {
+    std::vector<uint32_t> flat;
+
+    if (blocks_only) {
+        for (auto& step : t.steps) {
+            auto* p  = std::get_if<uint32_t>(&step);
+            assert(p != nullptr);
+            flat.push_back(*p);
+        }
+    } else {
+        for (auto& step : t.steps) {
+            if (auto* p = std::get_if<uint32_t>(&step)) [[likely]] {
+                flat.push_back(*p);
+            } else {
+                auto& li = std::get<BCLoopInstance>(step);
+                flat.push_back(LOOP_ID_OFFSET + li.loop_id);
+            }
+        }
+    }
+
+    return flat;  
+}
+
+BCTrace build_chains(BCDatabase& db, const BCTrace& input, BCStatusViewModel& sv, bool first_pass) {
+
+    const std::vector<uint32_t> flat = flatten(input, first_pass);
+    sv.setup_job("Mapping successors", flat.size());
+
+    for (size_t i=0;i<flat.size()-1;i++) {
+        db.next_map[flat[i]][flat[i+1]]++;
+        db.prev_map[flat[i+1]][flat[i]]++;
         sv.update_job_progress(i);
     }
 
-    sv.update_job_progress(raw.size());
+    sv.update_job_progress(flat.size());
 
     sv.setup_job("Scanning for constant successors", db.next_map.size());
     uint64_t cs_progress = 0;
 
-    std::map<BCAddr, BCAddr> glue;
+    std::unordered_map<uint32_t, uint32_t> glue;
     for (auto const& [src, targets] : db.next_map) {
         if (targets.size() == 1) {
-            BCAddr dst = targets.begin()->first;
-            // if (src == dst) continue;
+            uint32_t dst = targets.begin()->first;
+            if (src == dst) continue;
             if (db.prev_map[dst].size() == 1) glue[src] = dst;
         }
         sv.update_job_progress(cs_progress++);
     }
     sv.update_job_progress(db.next_map.size());
 
-    std::unordered_map<BCAddr, uint32_t> blk_starts;
-    uint32_t blk_id = 1;
+    std::unordered_map<uint32_t, uint32_t> blk_starts;
+    uint32_t blk_id = db.blocks.size() + 1;
+    uint32_t new_blocks = 0;
 
-    std::map<BCAddr, bool> has_incoming_glue;
+    std::unordered_set<uint32_t> has_incoming_glue;
     for (auto const& [src, dst] : glue) {
-        has_incoming_glue[dst] = true;
+        has_incoming_glue.insert(dst);
     }
 
     sv.setup_job("Generating block definitions", glue.size());
-    printf("Sizing: %lu, %lu\n", glue.size(), has_incoming_glue.size());
 
     for (auto const& [src, dst] : glue) {
-        if (!has_incoming_glue[src]) {
-            std::string name = "BLK_" + std::to_string(blk_id);
-            std::vector<BCAddr> members;
+        if (!has_incoming_glue.count(src)) {
+
+            std::vector<BCObject*> members;
             BCAddr curr = src;
 
             while (glue.count(curr)) {
-                members.push_back(curr);
+                members.push_back(db.resolve_object(curr));
                 curr = glue[curr];
             }
-            members.push_back(curr);
-
+            members.push_back(db.resolve_object(curr));
             blk_starts[src] = blk_id;
 
-            db.insert<BCBlock>(blk_id, name, members);
+            db.insert<BCBlock>(blk_id, members);
+            new_blocks++;
             blk_id++;
 
         }
@@ -93,49 +121,37 @@ BCTrace build_chains(BCDatabase& db, const std::vector<BCAddr>& raw, BCStatusVie
     }
 
     sv.update_job_progress(glue.size());
-    sv.setup_job("Optimizing trace", raw.size());
+    sv.setup_job("Optimizing trace", flat.size());
     BCTrace trace;
     
-    for (size_t i=0;i< raw.size();) {
-        BCAddr curr = raw[i];
+    for (size_t i=0;i<flat.size();) {
+        BCAddr curr = flat[i];
+
         if (glue.count(curr)) {
             BCBlock* block = db.getBlockById(blk_starts[curr]);
-            trace.push_block(block->id);
-            i += block->loc_count();
+            trace.push_block(block->id + BLOCK_ID_OFFSET);
+            i += block->members.size();
         } else {
-            auto res = db.insert<BCBasicBlock>(blk_id, to_hex(curr));
-            trace.push_block(res.id);
-            if (res.created) blk_id++;
+            trace.push_block(curr);
             i++;
         }
         sv.update_job_progress(i);
     }
 
-    sv.update_job_progress(raw.size());
+    std::cout << "Added " << new_blocks << " new blocks\n";
+
+    sv.update_job_progress(flat.size());
     
     return trace;
 }
 
-std::vector<uint32_t> flatten(const BCTrace& t) {
-    std::vector<uint32_t> flat;
-
-    for (auto& step : t.steps) {
-        if (auto* p = std::get_if<uint32_t>(&step)) {
-            flat.push_back(*p);
-        } else {
-            auto& li = std::get<BCLoopInstance>(step);
-            flat.push_back(LOOP_ID_OFFSET + li.loop_id);
-        }
-    }
-    return flat;  
-}
-
 BCTrace deloop(BCDatabase& db, const BCTrace& src, BCStatusViewModel& sv) {
+
     const int MAX_LOOP_SIZE = 25;
-    const int MIN_LOOP_THRESHOLD = 10;
+    const int MIN_LOOP_THRESHOLD = 3;
     BCTrace t = src;
 
-    uint32_t loop_id = 1;
+    uint32_t loop_id = db.loops.size() + 1;
 
     for (int s=1;s<=MAX_LOOP_SIZE;s++) {
 
@@ -167,7 +183,7 @@ BCTrace deloop(BCDatabase& db, const BCTrace& src, BCStatusViewModel& sv) {
                 total_its += (ic - 1);
 
                 if (ic >= MIN_LOOP_THRESHOLD) {
-                    auto res = db.insert<BCLoop>(loop_id, "LOOP_" + std::to_string(loop_id), data+is, data+is+s);
+                    auto res = db.insert<BCLoop>(loop_id, data+is, data+is+s);
                     stage.push_loop(res.id, ic);
                     if (res.created) {
                         loop_id++;
@@ -186,70 +202,38 @@ BCTrace deloop(BCDatabase& db, const BCTrace& src, BCStatusViewModel& sv) {
             sv.update_job_progress(i);
         }
 
+        int prev_idx = 0;
+        for (auto& step : stage.steps) {
+            if (auto* id = std::get_if<uint32_t>(&step)) {
+                if (*id >= LOOP_ID_OFFSET) {
+                    uint32_t lid = *id - LOOP_ID_OFFSET;
+                    while (lid < loop_id && prev_idx < t.steps.size()) {
+                        if (auto* li = std::get_if<BCLoopInstance>(&t.steps[prev_idx])) {
+                            if (li->loop_id == lid) {
+                                step = BCLoopInstance{ lid, li->iterations };
+                                prev_idx++;
+                                break;
+                            }
+                        }
+                        prev_idx++;
+                    }
+                }
+            }
+        }
+
         t = std::move(stage);
 
         // printf("Size %d: Found %d loops with %d usages and %d total iterations (vec size %zu)\n",
         //     s, loops_found, instances_found, total_its, t.steps.size());
 
     }
+    return t;
 
-    BCTrace out;
-    out.steps.reserve(t.size());
-
-    sv.setup_job("De-flattening loops", t.size());
-    int si = 0;
-    int ti = 0;
-
-    auto matches_body = [&](int start, const BCLoop* lp) -> bool {
-        for (int j=0;j<lp->body.size();j++) {
-            if (start+j >= src.steps.size()) return false;
-            auto* val = std::get_if<uint32_t>(&src.steps[start+j]);
-            if (!val) return false;
-            if (*val != lp->body[j]) return false;
-        }
-        return true;
-    };
-
-    while (ti < t.size()) {
-        std::visit(Overload {
-
-            [&](uint32_t id) {
-                if (id >= LOOP_ID_OFFSET) {
-
-                    BCLoop* loop = db.getLoopById(id - LOOP_ID_OFFSET);
-                    int loop_size = loop->body.size();
-                    int it_count = 0;
-                    while (si + loop_size <= (int)src.size() &&
-                        matches_body(si, loop)) {
-                        it_count++;
-                        si += loop_size;
-                    }
-
-                    out.push_loop(loop->id, it_count);
-                    ti++;
-
-                } else {
-                    out.push_block(id);
-                    si++;
-                    ti++;
-                }
-            },
-
-            [&](BCLoopInstance li) {
-                out.push_loop(li);
-                si += db.getLoopById(li.loop_id)->body.size() * li.iterations;
-                ti++;
-            }
-        }, t.steps[ti]);
-        sv.update_job_progress(si);
-    }
-
-    return out;
 }
 
 BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
 
-    std::vector<BCAddr> raw_data;
+    BCTrace raw_data;
     std::ifstream f(path, std::ios::binary);
 
     f.seekg(0, std::ios::end);
@@ -262,28 +246,38 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
     uint32_t hash; f.read(reinterpret_cast<char*>(&hash), 4);
     BCAddr base; f.read(reinterpret_cast<char*>(&base), 8);
 
-    sv.setup_job("Loading trace", (size - (uint64_t)f.tellg()) / (is_x64 ? 8 : 4));
-    int read = 0;
-
-    BCAddr a = 0;
-    while (f.read((char*)&a, (is_x64 ? 8 : 4))) {
-        raw_data.push_back(a);
-        sv.update_job_progress(read++);
-        a = 0;
-    }
-
     BCDatabase db;
     db.base_address = base;
     db.crc_hash = hash;
 
+    sv.setup_job("Loading trace", (size - (uint64_t)f.tellg()) / (is_x64 ? 8 : 4));
+    int read = 0;
+
+    BCAddr a = 0;
+    uint32_t bblk_id = 1;
+
+    while (f.read((char*)&a, (is_x64 ? 8 : 4))) {
+        auto res = db.insert<BCBasicBlock>(bblk_id, a);
+        raw_data.push_block(res.id);
+        if (res.created) bblk_id++;
+        sv.update_job_progress(read++);
+        a = 0;
+    }
+
+    std::cout << "Loaded " << bblk_id-1 << " basic blocks\n";
+
     printf("Architecture: %s \nHash: %04X \nBase: %08lX\n", (is_x64 ? "x64" : "x86"), hash, base);
 
-    BCTrace t1 = build_chains(db, raw_data, sv);
+    BCTrace t1 = build_chains(db, raw_data, sv, true);
 
     std::cout << "\nFound " << db.blocks.size() << " unique blocks and merged " << t1.steps.size()
         << " lines of trace\n";
 
     BCTrace t2 = deloop(db, t1, sv);
+
+    db.apply_prevs_nexts();
+
+    // t2 = build_chains(db, t2, sv, false);
 
     std::cout
         << "\nAnalysis done with " << db.blocks.size() << " unique blocks and "
@@ -292,30 +286,44 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
     db.apply_trace(t2);
     db.apply_prevs_nexts();
 
-    db.find_hot_cold_blocks(sv);
+    // db.find_hot_cold_blocks(sv);
 
     std::ofstream out("final_timeline.txt");
     
     for (const TraceStep& s : t2.steps) {
         std::visit(Overload {
-            [&](uint32_t blk_id) { out << blk_id << '\n'; },
-            [&](BCLoopInstance li) { out << 'L' << li.loop_id - LOOP_ID_OFFSET << " x" << li.iterations << '\n'; }
+            [&](uint32_t blk_id) {
+                if (blk_id >= BLOCK_ID_OFFSET) {
+                    out << db.getBlockById(blk_id - BLOCK_ID_OFFSET)->name << '\n';
+                } else {
+                    out << db.getBasicBlockById(blk_id)->name << '\n';
+                }
+            },
+            [&](BCLoopInstance li) {
+                out << db.getLoopById(li.loop_id)->name << " x" << li.iterations << '\n';
+            }
         }, s);
     }
 
+    std::cout << "Output trace saved\n";
+
     std::ofstream dict_out("structure_dictionary.txt");
     for (auto const& [id, block] : db.blocks) {
-        dict_out << block->name << ": ";
-        for (const auto& c : block->locs) dict_out << to_hex(c) << " ";
-        dict_out << "\n";
+        dict_out << block.get()->name << ": ";
+        for (const BCObject* m : block.get()->members) {
+            dict_out << m->name << ' ';
+        }
+        dict_out << '\n';
     }
-
+    
     for (auto const& [id, loop] : db.loops) {
-        dict_out << loop->name << ": ";
-        for (const auto& el : loop->body) dict_out << db.getBlockById(el)->name << " ";
-        dict_out << "\n";
+        dict_out << loop.get()->name << ": ";
+        for (const BCObject* m : loop.get()->body) {
+            dict_out << m->name << ' ';
+        }
+        dict_out << '\n';
     }
 
-    std::cout << "Output trace saved." << std::endl;
+    std::cout << "Dictionary saved" << std::endl;
     return db;
 }

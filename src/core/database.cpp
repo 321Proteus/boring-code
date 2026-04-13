@@ -1,6 +1,5 @@
 #include "database.hpp"
 #include "block.hpp"
-#include "address.hpp"
 #include "core/loader.hpp"
 #include <algorithm>
 #include <cstdint>
@@ -8,40 +7,41 @@
 #include <utility>
 #include <variant>
 #include <vector>
+#include "core/object.hpp"
 #include "overload.hpp"
 
 void BCDatabase::apply_prevs_nexts() {
 
-    std::unordered_map<BCAddr, int> starts;
-    std::unordered_map<BCAddr, int> ends;
-    for (auto const& [id, block] : blocks) {
-        starts[block->first_member()] = id;
-        ends[block->last_member()] = id;
-    }
+    // std::unordered_map<BCAddr, int> starts;
+    // std::unordered_map<BCAddr, int> ends;
+    // for (auto const& [id, block] : blocks) {
+    //     starts[block->first_member()] = id;
+    //     ends[block->last_member()] = id;
+    // }
 
-    for (auto const& [id, block] : blocks) {
+    // for (auto const& [id, block] : blocks) {
 
-        BCAddr first = block->first_member();
-        BCAddr last = block->last_member();
+    //     BCAddr first = block->first_member();
+    //     BCAddr last = block->last_member();
 
-        if (next_map.count(last)) {
-            for (auto const& [next_addr, count] : next_map[last]) {
-                auto it = starts.find(next_addr);
-                if (it != starts.end()) {
-                    block->nexts[it->second] = count;
-                }
-            }
-        }
+    //     if (next_map.count(last)) {
+    //         for (auto const& [next_addr, count] : next_map[last]) {
+    //             auto it = starts.find(next_addr);
+    //             if (it != starts.end()) {
+    //                 block->nexts[it->second] = count;
+    //             }
+    //         }
+    //     }
 
-        if (prev_map.count(first)) {
-            for (auto const& [prev_addr, count] : prev_map[first]) {
-                auto it = ends.find(prev_addr);
-                if (it != ends.end()) {
-                    block->prevs[it->second] = count;
-                }
-            }
-        }
-    }
+    //     if (prev_map.count(first)) {
+    //         for (auto const& [prev_addr, count] : prev_map[first]) {
+    //             auto it = ends.find(prev_addr);
+    //             if (it != ends.end()) {
+    //                 block->prevs[it->second] = count;
+    //             }
+    //         }
+    //     }
+    // }
 
     prev_map.clear();
     next_map.clear();
@@ -50,13 +50,6 @@ void BCDatabase::apply_prevs_nexts() {
 
 void BCDatabase::apply_trace(const BCTrace& trace) {
     this->trace = trace;
-}
-
-BCBlock* BCDatabase::getByLoc(BCAddr address) const {
-    for (auto const& [id, block] : blocks) {
-        if (block->check_member(address)) return block.get();
-    }
-    return nullptr;
 }
 
 void BCDatabase::find_hot_cold_blocks(BCStatusViewModel& sv) {
@@ -72,11 +65,9 @@ void BCDatabase::find_hot_cold_blocks(BCStatusViewModel& sv) {
             [&](uint32_t blk_id) {
                 trace_freqs[blk_id]++;
             },
-            [&](BCLoopInstance const& lp) {
-                for (int i=0;i<lp.iterations;i++) {
-                    for (uint32_t blk_id : loops[lp.loop_id]->body) {
-                        trace_freqs[blk_id]++;
-                    }
+            [&](BCLoopInstance const& li) {
+                for (const BCObject* member : loops[li.loop_id]->body) {
+                    trace_freqs[member->id] += li.iterations;
                 }
             }
         }, step);
@@ -154,26 +145,5 @@ void BCDatabase::find_hot_cold_blocks(BCStatusViewModel& sv) {
     //     std::cout << blocks[cold[i].first]->name << ' ' << cold[i].second << std::endl;
     // }
 
-
-}
-
-BCBlock::Details BCDatabase::generate_details(const BCBlock& block) const {
-
-    BCBlock::Details d = {
-        .id=block.id,
-        .name=block.name,
-        .usage_count=block.usage_count,
-        .members=block.members, 
-        .prevs={},
-        .nexts={}
-    };
-
-    for (const auto& [prev, count] : block.prevs)
-        d.prevs.push_back({ prev, getBlockById(prev)->name, count });
-
-    for (const auto& [next, count] : block.nexts)
-        d.nexts.push_back({ next, getBlockById(next)->name, count });
-
-    return d;
 
 }

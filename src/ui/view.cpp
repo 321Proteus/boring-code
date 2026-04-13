@@ -18,7 +18,7 @@ std::shared_ptr<std::vector<BCTraceEntry>> BCTraceViewModel::precompute_trace(co
         TraceStep step = tr.steps[i];
         std::visit(Overload {
             [&](uint32_t blk_id) {
-                trace_list->push_back({ db.getBlockById(blk_id)->name, blk_id });
+                trace_list->push_back({ db.resolve_object(blk_id)->name, blk_id });
             },
             [&](BCLoopInstance li) {
                 BCLoop* loop = db.getLoopById(li.loop_id);

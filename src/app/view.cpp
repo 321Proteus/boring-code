@@ -1,17 +1,17 @@
 #include "view.hpp"
+#include "core/object.hpp"
 #include "trace_model.hpp"
-#include "core/block.hpp"
 #include <cstdint>
 #include <QString>
 #include <QMessageBox>
 #include <qobject.h>
 
-void QtViewModel::show_details(const BCBlock::Details& details) {
+void QtViewModel::show_details(const BCObject& object) {
 
     QTreeWidgetItem* name_widget = ui.details_view->topLevelItem(0);
     name_widget->setText(0, "Name");
     name_widget->setText(1,
-        QString::fromStdString(details.name)
+        QString::fromStdString(object.name)
     );
 
     QTreeWidgetItem* usage_count_widget = ui.details_view->topLevelItem(1);
@@ -19,8 +19,8 @@ void QtViewModel::show_details(const BCBlock::Details& details) {
     usage_count_widget->setText(
         1,
         QString("%1 (top %2%)")
-            .arg(details.usage_count.value)
-            .arg(int(details.usage_count.percentile * 10000)/10000.0)
+            .arg(object.usage_count.value)
+            .arg(int(object.usage_count.percentile * 10000)/10000.0)
     );
 
     QTreeWidgetItem* instr_count_widget = ui.details_view->topLevelItem(2);
@@ -44,43 +44,43 @@ void QtViewModel::show_details(const BCBlock::Details& details) {
         QString::fromStdString("TODO")
     );
 
-    QTreeWidgetItem* members_widget = ui.details_view->topLevelItem(4);
-    members_widget->setText(0, "Locations");
-    members_widget->setText(
-        1,
-        QString::number(details.members.size())
-    );
+    // QTreeWidgetItem* members_widget = ui.details_view->topLevelItem(4);
+    // members_widget->setText(0, "Locations");
+    // members_widget->setText(
+    //     1,
+    //     QString::number(details.members.size())
+    // );
 
-    members_widget->takeChildren();
+    // members_widget->takeChildren();
 
-    QList<QTreeWidgetItem *> members;
-    for (const BCAddr& loc : details.members) {
+    // QList<QTreeWidgetItem *> members;
+    // for (const BCAddr& loc : details.members) {
 
-        QTreeWidgetItem* child = new QTreeWidgetItem();
+    //     QTreeWidgetItem* child = new QTreeWidgetItem();
 
-        child->setForeground(0, Qt::darkBlue);
-        QFont font = child->font(0);
-        font.setUnderline(true);
-        child->setFont(0, font);
+    //     child->setForeground(0, Qt::darkBlue);
+    //     QFont font = child->font(0);
+    //     font.setUnderline(true);
+    //     child->setFont(0, font);
 
-        child->setText(0, QString::fromStdString(to_hex(loc)));
-        members.append(child);
-        child->setData(0, Qt::UserRole, QVariant::fromValue(loc));
-    }
+    //     child->setText(0, QString::fromStdString(to_hex(loc)));
+    //     members.append(child);
+    //     child->setData(0, Qt::UserRole, QVariant::fromValue(loc));
+    // }
 
-    members_widget->addChildren(members);
+    // members_widget->addChildren(members);
 
     QTreeWidgetItem* prevs_widget = ui.details_view->topLevelItem(5);
     prevs_widget->setText(0, "Predecessors");
     prevs_widget->setText(
         1,
-        QString::number(details.prevs.size())
+        QString::number(object.prevs.size())
     );
 
     prevs_widget->takeChildren();
 
     QList<QTreeWidgetItem *> prevs;
-    for (const Neighbor& prev : details.prevs) {
+    for (const Neighbor& prev : object.prevs) {
         QTreeWidgetItem* child = new QTreeWidgetItem();
         child->setText(0, QString("%1 (x%2)").arg(prev.name).arg(prev.count));
         prevs.append(child);
@@ -93,13 +93,13 @@ void QtViewModel::show_details(const BCBlock::Details& details) {
     nexts_widget->setText(0, "Successors");
     nexts_widget->setText(
         1,
-        QString::number(details.nexts.size())
+        QString::number(object.nexts.size())
     );
 
     nexts_widget->takeChildren();
 
     QList<QTreeWidgetItem *> nexts;
-    for (const Neighbor& next : details.nexts) {
+    for (const Neighbor& next : object.nexts) {
         QTreeWidgetItem* child = new QTreeWidgetItem();
         child->setText(0, QString("%1 (x%2)").arg(next.name).arg(next.count));
         nexts.append(child);
@@ -107,10 +107,6 @@ void QtViewModel::show_details(const BCBlock::Details& details) {
     }
 
     nexts_widget->addChildren(nexts);
-
-}
-
-void QtViewModel::show_details(const BCBasicBlock& details)  {
 
 }
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/block.hpp"
+#include "core/object.hpp"
 #include <memory>
 #include <vector>
 
@@ -17,8 +18,7 @@ typedef struct {
 
 class BCDetailsViewModel {
 public:
-    virtual void show_details(const BCBlock::Details& details) = 0;
-    virtual void show_details(const BCBasicBlock& block) = 0;
+    virtual void show_details(const BCObject& object) = 0;
 };
 
 class BCStatusViewModel {

@@ -13,6 +13,7 @@
 #include <variant>
 #include <vector>
 #include "core/loader.hpp"
+#include "core/object.hpp"
 #include "data/session.hpp"
 #include "core/overload.hpp"
 
@@ -82,14 +83,14 @@ public:
         }
 
         BCDatabase* db = sess.database.get();
-        BCBlock* block = db->getBlockByName(args.main_arg);
-
-        if (!block) {
-            std::cerr << "Block not found!" << std::endl;
+        std::string name = args.main_arg;
+        auto it = db->names.find(name);
+        if (it == db->names.end()) {
+            std::cerr << "Object not found!" << std::endl;
             return 0x4;
         }
-        BCBlock::Details d = db->generate_details(*block);
-        sess.details_view->show_details(d);
+        BCObject* obj = db->resolve_object(it->second);
+        sess.details_view->show_details(*obj);
 
         return 0x0;
     }
@@ -146,7 +147,7 @@ public:
                     TraceStep step = db->trace.steps[offset];
                     std::visit(Overload {
                         [&](uint32_t blk_id) {
-                            std::cout << offset << '\t' << db->getBlockById(blk_id)->name << '\n';
+                            std::cout << offset << '\t' << db->resolve_object(blk_id)->name << '\n';
                         },
                         [&](BCLoopInstance loop) {
                             if (TRACE_COLLAPSE_LOOP) {
