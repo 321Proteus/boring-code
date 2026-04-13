@@ -142,7 +142,7 @@
       <item>
        <widget class="QListView" name="TraceView">
         <property name="styleSheet">
-         <string notr="true">QListWidget::item {
+         <string notr="true">QListView::item {
     height: 15px;
 }</string>
         </property>
