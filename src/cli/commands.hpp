@@ -1,6 +1,5 @@
 #pragma once
 
-#include "core/block.hpp"
 #include "core/database.hpp"
 #include <cstddef>
 #include <iostream>
@@ -90,7 +89,7 @@ public:
             return 0x4;
         }
         BCObject* obj = db->resolve_object(it->second);
-        sess.details_view->show_details(*obj);
+        obj->dispatch_details(*sess.details_view);
 
         return 0x0;
     }

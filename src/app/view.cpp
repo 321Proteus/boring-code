@@ -6,80 +6,37 @@
 #include <QMessageBox>
 #include <qobject.h>
 
-void QtViewModel::show_details(const BCObject& object) {
+void show_object_info(QTreeWidget& widget, const BCObject& object) {
 
-    QTreeWidgetItem* name_widget = ui.details_view->topLevelItem(0);
+    QTreeWidgetItem* name_widget = new QTreeWidgetItem(&widget);
     name_widget->setText(0, "Name");
     name_widget->setText(1,
         QString::fromStdString(object.name)
     );
-
-    QTreeWidgetItem* usage_count_widget = ui.details_view->topLevelItem(1);
+    
+    QTreeWidgetItem* usage_count_widget = new QTreeWidgetItem(&widget);
     usage_count_widget->setText(0, "Usage count");
-    usage_count_widget->setText(
-        1,
-        QString("%1 (top %2%)")
-            .arg(object.usage_count.value)
-            .arg(int(object.usage_count.percentile * 10000)/10000.0)
-    );
+    auto uc = object.usage_count;
 
-    QTreeWidgetItem* instr_count_widget = ui.details_view->topLevelItem(2);
-    instr_count_widget->setText(0, "Instruction count");
-    instr_count_widget->setText(
-        1,
-        QString::fromStdString("TODO")
-    );
+    if (uc.percentile == -1)
+        usage_count_widget->setText(1, QString::number(uc.value));
+    else
+        usage_count_widget->setText(
+            1,
+            QString("%1 (top %2%)")
+                .arg(uc.value)
+                .arg(int(uc.percentile * 10000)/10000.0)
+        );
 
-    QTreeWidgetItem* loc_count_widget = ui.details_view->topLevelItem(3);
-    loc_count_widget->setText(0, "Location count");
-    loc_count_widget->setText(
-        1,
-        QString::fromStdString("TODO")
-    );
-
-    QTreeWidgetItem* size_widget = ui.details_view->topLevelItem(4);
-    size_widget->setText(0, "Total size");
-    size_widget->setText(
-        1,
-        QString::fromStdString("TODO")
-    );
-
-    // QTreeWidgetItem* members_widget = ui.details_view->topLevelItem(4);
-    // members_widget->setText(0, "Locations");
-    // members_widget->setText(
-    //     1,
-    //     QString::number(details.members.size())
-    // );
-
-    // members_widget->takeChildren();
-
-    // QList<QTreeWidgetItem *> members;
-    // for (const BCAddr& loc : details.members) {
-
-    //     QTreeWidgetItem* child = new QTreeWidgetItem();
-
-    //     child->setForeground(0, Qt::darkBlue);
-    //     QFont font = child->font(0);
-    //     font.setUnderline(true);
-    //     child->setFont(0, font);
-
-    //     child->setText(0, QString::fromStdString(to_hex(loc)));
-    //     members.append(child);
-    //     child->setData(0, Qt::UserRole, QVariant::fromValue(loc));
-    // }
-
-    // members_widget->addChildren(members);
-
-    QTreeWidgetItem* prevs_widget = ui.details_view->topLevelItem(5);
+    QTreeWidgetItem* prevs_widget = new QTreeWidgetItem(&widget);
     prevs_widget->setText(0, "Predecessors");
     prevs_widget->setText(
         1,
         QString::number(object.prevs.size())
     );
-
     prevs_widget->takeChildren();
-
     QList<QTreeWidgetItem *> prevs;
+
     for (const Neighbor& prev : object.prevs) {
         QTreeWidgetItem* child = new QTreeWidgetItem();
         child->setText(0, QString("%1 (x%2)").arg(prev.name).arg(prev.count));
@@ -89,16 +46,15 @@ void QtViewModel::show_details(const BCObject& object) {
 
     prevs_widget->addChildren(prevs);
 
-    QTreeWidgetItem* nexts_widget = ui.details_view->topLevelItem(6);
+    QTreeWidgetItem* nexts_widget = new QTreeWidgetItem(&widget);
     nexts_widget->setText(0, "Successors");
     nexts_widget->setText(
         1,
         QString::number(object.nexts.size())
     );
-
     nexts_widget->takeChildren();
-
     QList<QTreeWidgetItem *> nexts;
+
     for (const Neighbor& next : object.nexts) {
         QTreeWidgetItem* child = new QTreeWidgetItem();
         child->setText(0, QString("%1 (x%2)").arg(next.name).arg(next.count));
@@ -107,6 +63,84 @@ void QtViewModel::show_details(const BCObject& object) {
     }
 
     nexts_widget->addChildren(nexts);
+
+}
+
+void QtViewModel::show_details(const BCBlock& block) const {
+
+    ui.details_view->clear();
+
+    show_object_info(*ui.details_view, block);
+
+    QTreeWidgetItem* instr_count_widget = new QTreeWidgetItem(ui.details_view);
+    instr_count_widget->setText(0, "Instruction count");
+    instr_count_widget->setText(1, "TODO");
+
+    QTreeWidgetItem* size_widget = new QTreeWidgetItem(ui.details_view);
+    size_widget->setText(0, "Total size");
+    size_widget->setText(1, "TODO");
+
+    QTreeWidgetItem* members_widget = new QTreeWidgetItem(ui.details_view);
+    members_widget->setText(0, "Locations");
+    members_widget->setText(1, QString::number(block.members.size()));
+
+    members_widget->takeChildren();
+
+    QList<QTreeWidgetItem *> members;
+    for (const BCObject* m : block.members) {
+
+        QTreeWidgetItem* child = new QTreeWidgetItem();
+
+        child->setForeground(0, Qt::darkBlue);
+        QFont font = child->font(0);
+        font.setUnderline(true);
+        child->setFont(0, font);
+
+        child->setText(0, QString::fromStdString(m->name));
+        members.append(child);
+        child->setData(0, Qt::UserRole, QVariant::fromValue(m->id));
+    }
+
+    members_widget->addChildren(members);
+
+}
+
+void QtViewModel::show_details(const BCBasicBlock& bb) const {
+
+    ui.details_view->clear();
+
+    show_object_info(*ui.details_view, bb);
+
+}
+
+void QtViewModel::show_details(const BCLoop& loop) const {
+
+    ui.details_view->clear();
+
+    show_object_info(*ui.details_view, loop);
+
+    QTreeWidgetItem* body_widget = new QTreeWidgetItem(ui.details_view);
+    body_widget->setText(0, "Members");
+    body_widget->setText(1, QString::number(loop.body.size()));
+
+    body_widget->takeChildren();
+
+    QList<QTreeWidgetItem *> body;
+    for (const BCObject* m : loop.body) {
+
+        QTreeWidgetItem* el = new QTreeWidgetItem();
+
+        el->setForeground(0, Qt::darkBlue);
+        QFont font = el->font(0);
+        font.setUnderline(true);
+        el->setFont(0, font);
+
+        el->setText(0, QString::fromStdString(m->name));
+        body.append(el);
+        el->setData(0, Qt::UserRole, QVariant::fromValue(m->id));
+    }
+
+    body_widget->addChildren(body);
 
 }
 

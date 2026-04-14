@@ -3,7 +3,6 @@
 #include <memory>
 #include "./ui_mainwindow.h"
 #include "core/database.hpp"
-#include "core/block.hpp"
 #include "core/loader.hpp"
 #include "core/object.hpp"
 #include "view.hpp"
@@ -80,7 +79,7 @@ void MainWindow::onSelectionChanged(const QItemSelection& selected, const QItemS
         QModelIndex index = indexes.first();
         uint32_t id = index.data(Qt::UserRole).toUInt();
         BCObject* object = db->resolve_object(id);
-        this->session.details_view->show_details(*object);
+        object->dispatch_details(*session.details_view);
 
     } else {
         for (int i=0;i<ui->DetailsView->topLevelItemCount();i++) {

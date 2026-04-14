@@ -1,5 +1,4 @@
 #include "database.hpp"
-#include "block.hpp"
 #include "core/loader.hpp"
 #include <algorithm>
 #include <cstdint>
@@ -9,43 +8,71 @@
 #include <vector>
 #include "core/object.hpp"
 #include "overload.hpp"
+#include "ui/view.hpp"
 
-void BCDatabase::apply_prevs_nexts() {
-
-    // std::unordered_map<BCAddr, int> starts;
-    // std::unordered_map<BCAddr, int> ends;
-    // for (auto const& [id, block] : blocks) {
-    //     starts[block->first_member()] = id;
-    //     ends[block->last_member()] = id;
-    // }
-
-    // for (auto const& [id, block] : blocks) {
-
-    //     BCAddr first = block->first_member();
-    //     BCAddr last = block->last_member();
-
-    //     if (next_map.count(last)) {
-    //         for (auto const& [next_addr, count] : next_map[last]) {
-    //             auto it = starts.find(next_addr);
-    //             if (it != starts.end()) {
-    //                 block->nexts[it->second] = count;
-    //             }
-    //         }
-    //     }
-
-    //     if (prev_map.count(first)) {
-    //         for (auto const& [prev_addr, count] : prev_map[first]) {
-    //             auto it = ends.find(prev_addr);
-    //             if (it != ends.end()) {
-    //                 block->prevs[it->second] = count;
-    //             }
-    //         }
-    //     }
-    // }
+void BCDatabase::apply_prevs_nexts(BCStatusViewModel& sv) {
 
     prev_map.clear();
     next_map.clear();
-    
+
+    map_successors(*this, flatten(this->trace, false), sv);
+
+    std::unordered_map<uint32_t, int> starts;
+    std::unordered_map<uint32_t, int> ends;
+
+    for (auto& [id, obj] : blocks) {
+        obj->prevs.clear();
+        obj->nexts.clear();
+    }
+    for (auto& [id, obj] : basic_blocks) {
+        obj->prevs.clear();
+        obj->nexts.clear();
+    }
+    for (auto& [id, obj] : loops) {
+        obj->prevs.clear();
+        obj->nexts.clear();
+    }
+
+    size_t progress = 0;
+
+    for (auto& [from_id, targets] : next_map) {
+
+        BCObject* from_obj = resolve_object(from_id);
+        if (!from_obj) continue;
+
+        auto& v = from_obj->nexts;
+        v.reserve(targets.size());
+        for (auto& [to_id, count] : targets) {
+            BCObject* to_obj = resolve_object(to_id);
+            if (!to_obj) continue;
+
+            v.push_back(Neighbor { to_id, to_obj->name, count });
+        }
+
+        progress++;
+        sv.update_job_progress(progress);
+    }
+
+    for (auto& [to_id, sources] : prev_map) {
+        BCObject* to_obj = resolve_object(to_id);
+        if (!to_obj) continue;
+
+        auto& vec = to_obj->prevs;
+        vec.reserve(sources.size());
+
+        for (auto& [from_id, count] : sources) {
+            BCObject* from_obj = resolve_object(from_id);
+            if (!from_obj) continue;
+
+            vec.push_back(Neighbor{
+                .id = from_id,
+                .name = from_obj->name,
+                .count = count
+            });
+        }
+    }
+
+    sv.update_job_progress(next_map.size());
 }
 
 void BCDatabase::apply_trace(const BCTrace& trace) {
@@ -58,17 +85,17 @@ void BCDatabase::find_hot_cold_blocks(BCStatusViewModel& sv) {
     uint64_t progress = 0;
 
     std::unordered_map<uint32_t, uint32_t> trace_freqs;
-    trace_freqs.reserve(blocks.size());
-
+    trace_freqs.reserve(blocks.size() + basic_blocks.size() + loops.size());
     for (TraceStep step : trace.steps) {
         std::visit(Overload {
             [&](uint32_t blk_id) {
                 trace_freqs[blk_id]++;
             },
             [&](BCLoopInstance const& li) {
-                for (const BCObject* member : loops[li.loop_id]->body) {
-                    trace_freqs[member->id] += li.iterations;
-                }
+                trace_freqs[li.loop_id + LOOP_ID_OFFSET] += li.iterations;
+                // for (const BCObject* member : loops[li.loop_id]->body) {
+                //     trace_freqs[member->id] += li.iterations;
+                // }
             }
         }, step);
         sv.update_job_progress(progress++);
@@ -80,70 +107,28 @@ void BCDatabase::find_hot_cold_blocks(BCStatusViewModel& sv) {
     for (auto const& [id, count] : trace_freqs)
         v.emplace_back(id, count);
 
-    size_t hot_k = static_cast<size_t>((1.0 - HOT_COLD_THRESHOLD) * v.size());
-    size_t cold_k = static_cast<size_t>(HOT_COLD_THRESHOLD * v.size());
-
-    std::nth_element(
-        v.begin(),
-        v.begin() + hot_k,
-        v.end(),
-        [](auto const& a, auto const& b) { return a.second < b.second; }
-    );
-    std::vector<std::pair<uint32_t, uint32_t>> hot(v.begin() + hot_k, v.end());
-
-    std::nth_element(
-        v.begin(),
-        v.begin() + cold_k,
-        v.end(),
-        [](auto const& a, auto const& b) { return a.second < b.second; }
-    );
-    std::vector<std::pair<uint32_t, uint32_t>> cold(v.begin(), v.begin() + cold_k);
-    
-    uint32_t min_hot = std::min_element(hot.begin(), hot.end(),
-    [](const auto& a, const auto& b) {
+    std::sort(v.begin(), v.end(), [](const auto& a, const auto& b) {
         return a.second < b.second;
-    })->second;
+    });
 
-    uint32_t max_hot = std::max_element(hot.begin(), hot.end(),
-    [](const auto& a, const auto& b) {
-        return a.second < b.second;
-    })->second;
+    const int n = v.size();
+    if (n == 0) return;
 
-    uint32_t min_cold = std::min_element(cold.begin(), cold.end(),
-    [](const auto& a, const auto& b) {
-        return a.second < b.second;
-    })->second;
+    size_t hot_k = static_cast<size_t>((1.0 - HOT_COLD_THRESHOLD) * n);
+    size_t cold_k = static_cast<size_t>(HOT_COLD_THRESHOLD * n);
 
-    uint32_t max_cold = std::max_element(cold.begin(), cold.end(),
-    [](const auto& a, const auto& b) {
-        return a.second < b.second;
-    })->second;
+    for (int i=0;i<n;i++) {
+        auto [id, freq] = v[i];
+        BCObject* obj = resolve_object(id);
+        if (!obj) continue;
 
-    for (auto const& [id, block] : blocks) {
-        uint32_t freq = trace_freqs[id];
-        if (freq >= min_hot || freq <= max_cold) {
-            block->usage_count = { freq, (float)freq / max_hot * 100 };
+        double pc = (double)i / (n-1) * 100.0;
+
+        if (i <= cold_k || i >= hot_k) {
+            obj->usage_count = { freq, pc };
         } else {
-            block->usage_count = { freq, -1 };
+            obj->usage_count = { freq, -1.0 };
         }
     }
-
-    // std::sort(hot.begin(), hot.end(), [](const auto& a, const auto& b) {
-    //     return a.second > b.second;
-    // });
-    // std::sort(cold.begin(), cold.end(), [](const auto& a, const auto& b) {
-    //     return a.second < b.second;
-    // });
-    
-    // std::cout << "Hot\n";
-    // for (int i=0;i<10;i++) {
-    //     std::cout << blocks[hot[i].first]->name << ' ' << hot[i].second << std::endl;
-    // }
-
-    // std::cout << "Cold\n";
-    // for (int i=0;i<10;i++) {
-    //     std::cout << blocks[cold[i].first]->name << ' ' << cold[i].second << std::endl;
-    // }
-
 
 }

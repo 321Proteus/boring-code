@@ -1,7 +1,5 @@
 #pragma once
 
-#include "core/block.hpp"
-#include "core/object.hpp"
 #include "ui/view.hpp"
 #include <QListView>
 #include <QTreeWidget>
@@ -32,7 +30,11 @@ public:
     static std::shared_ptr<std::vector<BCTraceEntry>> precompute_trace(const BCDatabase &db, BCStatusViewModel &sv) {
         return BCTraceViewModel::precompute_trace(db, sv);
     }
-    void show_details(const BCObject& object);
+
+    void show_details(const BCBlock& block) const;
+    void show_details(const BCBasicBlock& bb) const;
+    void show_details(const BCLoop& loop) const;
+
     void setup_job(const std::string name, uint64_t size);
     void update_job_progress(uint64_t new_progress);
     void show_error(const std::string& msg);

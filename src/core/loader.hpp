@@ -1,9 +1,9 @@
 #pragma once
 
-#include "core/block.hpp"
 #include "ui/view.hpp"
 #include "overload.hpp"
 #include <variant>
+#include <vector>
 
 enum class BCFileType {
     ELF, PE, BCTRACE, UNKNOWN
@@ -11,6 +11,9 @@ enum class BCFileType {
 
 const uint32_t BLOCK_ID_OFFSET  = 0x40000000;
 const uint32_t LOOP_ID_OFFSET   = 0x80000000;
+
+const int MAX_LOOP_SIZE         = 25;
+const int MIN_LOOP_THRESHOLD    = 15;
 
 using TraceStep = std::variant<uint32_t, BCLoopInstance>;
 
@@ -46,5 +49,9 @@ public:
 #include "database.hpp"
 
 BCFileType detect_type(const std::string& path);
+
+std::vector<uint32_t> flatten(const BCTrace& t, bool blocks_only);
+
+void map_successors(BCDatabase& db, const std::vector<uint32_t>& t, BCStatusViewModel& sv);
 
 BCDatabase load_database(const std::string& path, BCStatusViewModel& sv);

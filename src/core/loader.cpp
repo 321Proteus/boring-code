@@ -18,7 +18,6 @@
 #include "overload.hpp"
 
 #include "database.hpp"
-#include "block.hpp"
 #include "address.hpp"
 
 BCFileType detect_type(const std::string& path) {
@@ -53,7 +52,7 @@ std::vector<uint32_t> flatten(const BCTrace& t, bool blocks_only = false) {
                 flat.push_back(*p);
             } else {
                 auto& li = std::get<BCLoopInstance>(step);
-                flat.push_back(LOOP_ID_OFFSET + li.loop_id);
+                flat.push_back(li.loop_id + LOOP_ID_OFFSET);
             }
         }
     }
@@ -61,18 +60,23 @@ std::vector<uint32_t> flatten(const BCTrace& t, bool blocks_only = false) {
     return flat;  
 }
 
-BCTrace build_chains(BCDatabase& db, const BCTrace& input, BCStatusViewModel& sv, bool first_pass) {
+void map_successors(BCDatabase& db, const std::vector<uint32_t>& t, BCStatusViewModel& sv) {
+    sv.setup_job("Mapping successors", t.size());
 
-    const std::vector<uint32_t> flat = flatten(input, first_pass);
-    sv.setup_job("Mapping successors", flat.size());
-
-    for (size_t i=0;i<flat.size()-1;i++) {
-        db.next_map[flat[i]][flat[i+1]]++;
-        db.prev_map[flat[i+1]][flat[i]]++;
+    for (size_t i=0;i<t.size()-1;i++) {
+        db.next_map[t[i]][t[i+1]]++;
+        db.prev_map[t[i+1]][t[i]]++;
         sv.update_job_progress(i);
     }
 
-    sv.update_job_progress(flat.size());
+    sv.update_job_progress(t.size());
+}
+
+BCTrace build_chains(BCDatabase& db, const BCTrace& input, BCStatusViewModel& sv, bool first_pass) {
+
+    const std::vector<uint32_t> flat = flatten(input, first_pass);
+
+    map_successors(db, flat, sv);
 
     sv.setup_job("Scanning for constant successors", db.next_map.size());
     uint64_t cs_progress = 0;
@@ -146,9 +150,7 @@ BCTrace build_chains(BCDatabase& db, const BCTrace& input, BCStatusViewModel& sv
 }
 
 BCTrace deloop(BCDatabase& db, const BCTrace& src, BCStatusViewModel& sv) {
-
-    const int MAX_LOOP_SIZE = 25;
-    const int MIN_LOOP_THRESHOLD = 3;
+    
     BCTrace t = src;
 
     uint32_t loop_id = db.loops.size() + 1;
@@ -275,8 +277,6 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
 
     BCTrace t2 = deloop(db, t1, sv);
 
-    db.apply_prevs_nexts();
-
     // t2 = build_chains(db, t2, sv, false);
 
     std::cout
@@ -284,9 +284,9 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
         << t2.steps.size() << " lines of trace. Saving..." << std::endl;
 
     db.apply_trace(t2);
-    db.apply_prevs_nexts();
+    db.apply_prevs_nexts(sv);
 
-    // db.find_hot_cold_blocks(sv);
+    db.find_hot_cold_blocks(sv);
 
     std::ofstream out("final_timeline.txt");
     

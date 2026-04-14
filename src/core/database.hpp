@@ -10,8 +10,7 @@
 #include <vector>
 
 #include "address.hpp"
-#include "block.hpp"
-#include "core/object.hpp"
+#include "object.hpp"
 #include "loader.hpp"
 #include "ui/view.hpp"
 #include "util/hash.h"

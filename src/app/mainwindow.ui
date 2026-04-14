@@ -97,46 +97,6 @@
           <string>Value</string>
          </property>
         </column>
-        <item>
-         <property name="text">
-          <string>Name</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Usage count</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Instruction count</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Location count</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Total size</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Predecessors</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Successors</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Tail type</string>
-         </property>
-        </item>
        </widget>
       </item>
       <item>
