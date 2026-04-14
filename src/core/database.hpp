@@ -40,7 +40,6 @@ public:
     BCAddr base_address;
     uint32_t crc_hash;
 
-    // Todo: get args from tuple and check before creating obj
     template<typename T, typename... Args>
     BCInsertionResult insert(uint32_t id, Args&&... args) {
 
@@ -54,7 +53,7 @@ public:
             if (it != blocks.end()) return { it->first, false };
             
             std::unique_ptr<T> obj = std::make_unique<T>(id, std::forward<Args>(args)...);
-            names[obj.get()->name] = id;
+            names[obj.get()->name] = id + BLOCK_ID_OFFSET;
             blocks.emplace(id, std::move(obj));
 
         } else if constexpr (std::is_same_v<T, BCBasicBlock>) {
@@ -90,7 +89,7 @@ public:
                 obj->body.push_back(resolve_object(r));
             }
 
-            names[obj.get()->name] = id;
+            names[obj.get()->name] = id + LOOP_ID_OFFSET;
             loops.emplace(id, std::move(obj));
             loop_hashes[h].push_back(id);
 
