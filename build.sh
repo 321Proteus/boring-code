@@ -14,3 +14,4 @@ cmake -B build64 -S . \
     -DCMAKE_BUILD_TYPE=Release
 
 cmake --build build64 --parallel $(nproc)
+

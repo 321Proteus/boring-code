@@ -5,6 +5,12 @@
 #include <stdbool.h>
 #include <zlib.h>
 
+#if defined(__x86_64__) || defined(_M_X64)
+static const bool x64 = true;
+#else
+static const bool x64 = false;
+#endif
+
 #pragma pack(push, 1)
 typedef struct {
     char magic[4];
@@ -17,29 +23,28 @@ typedef struct {
 
 uint32_t compute_crc32(const char* path) {
 
-    FILE* fp = fopen(path, "rb");
+    file_t f = dr_open_file(path, DR_FILE_READ);
+    if (f == INVALID_FILE) return 0;
 
-    if (fp == NULL) return 0;
+    unsigned char buf[1024];
+    ssize_t nread;
+    uint32_t crc = 0;
 
-    char buf[4096];
-    uint64_t read;
-
-    uint32_t crc = crc32(0L, Z_NULL, 0);
-
-    while ((read = fread(buf, 1, sizeof(buf), fp)) > 0) {
-        crc = crc32(crc, (const Bytef*)buf, read);
+    while ((nread = dr_read_file(f, buf, 1024)) > 0) {
+        crc = crc32(crc, buf, (size_t)nread);
     }
 
+    dr_close_file(f);
     return crc;
 }
 
-Header create_header(const char* path, bool is_x64) {
+Header create_header(const char* path) {
     Header hdr;
     hdr.magic[0] = 'B';
     hdr.magic[1] = 'C';
     hdr.magic[2] = 'C';
     hdr.magic[3] = 'T';
-    hdr.arch = is_x64;
+    hdr.arch = x64;
     hdr.hash = (path ? compute_crc32(path) : 0);
     hdr.version = 0x01;
     return hdr;

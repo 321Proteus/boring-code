@@ -132,12 +132,12 @@ void BCDatabase::find_hot_cold_blocks() {
 BCBlock::Details BCDatabase::generate_details(const BCBlock& block) const {
 
     BCBlock::Details d = {
-        .id=block.get_id(),
-        .name=block.name,
-        .usage_count=block.usage_count,
-        .locs=block.locs, 
-        .prevs={},
-        .nexts={}
+        block.get_id(),
+        block.name,
+        block.usage_count,
+        block.locs, 
+        {},
+        {}
     };
 
     for (const auto& [prev, count] : block.prevs)

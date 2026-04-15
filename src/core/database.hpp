@@ -21,6 +21,9 @@ public:
     std::unordered_map<BCAddr, std::map<BCAddr, int>> next_map;
     std::unordered_map<BCAddr, std::map<BCAddr, int>> prev_map;
 
+    uint64_t base_address;
+    uint32_t crc_hash;
+
     template<typename T, typename... Args>
     void insert(uint32_t id, const std::string& name, Args&&... args) {
 

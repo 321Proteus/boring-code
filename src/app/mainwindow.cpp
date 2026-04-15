@@ -26,10 +26,10 @@ MainWindow::MainWindow(Session& sess, QWidget *parent)
     setAcceptDrops(true);
 
     QtUI qtui {
-        .trace_view = ui->TraceView,
-        .details_view = ui->DetailsView,
-        .progress_bar = ui->ProgressBar,
-        .progress_text = ui->ProgressText
+        ui->TraceView,
+        ui->DetailsView,
+        ui->ProgressBar,
+        ui->ProgressText
     };
 
     view = std::make_unique<QtViewModel>(qtui);

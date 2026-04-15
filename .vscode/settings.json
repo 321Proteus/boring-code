@@ -1,0 +1,8 @@
+{
+    "cmake.configureSettings": {
+        "Qt6_DIR": "C:/Qt/6.11.0/msvc2022_64/lib/cmake/Qt6",
+        "DDynamoRIO_DIR": "C:/drio/cmake",
+        "CMAKE_TOOLCHAIN_FILE": "C:/vcpkg/scripts/buildsystems/vcpkg.cmake",
+        "CMAKE_BUILD_TYPE": "Release"
+    }
+}
