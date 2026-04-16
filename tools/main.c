@@ -1,19 +1,10 @@
 #include <stdint.h>
 #include <dr_api.h>
 #include <drmgr.h>
-#include <dr_events.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
-#include "dr_modules.h"
-#include "dr_tools.h"
 #include "header.h"
-
-#if defined(__x86_64__) || defined(_M_X64)
-static const bool x64 = true;
-#else
-static const bool x64 = false;
-#endif
 
 #define CHUNK_SIZE 10000
 static void* log_mutex;
@@ -97,13 +88,13 @@ DR_EXPORT void dr_client_main(client_id_t id, int argc, const char* argv[])
         const char* path = main_mod->full_path;
         dr_printf("Starting analysis of target %s\n", path);
 
-        hdr = create_header(path, x64);
+        hdr = create_header(path);
         hdr.base = (uint64_t)(uintptr_t)main_mod->start;
 
         if (!custom_name) sprintf(fname, "bcfunctions_%08x.bin", hdr.hash);
         dr_free_module_data(main_mod);
     } else {
-        hdr = create_header(NULL, x64);
+        hdr = create_header(NULL);
         hdr.base = 0;
         dr_printf("Warning: Couldn't find the main module, which probably indicates a broken or obfuscated binary. \
             Image base and CRC32 have been set to their default values.");
