@@ -12,13 +12,7 @@
 
 void BCDatabase::apply_prevs_nexts(BCStatusViewModel& sv) {
 
-    prev_map.clear();
-    next_map.clear();
-
     map_successors(*this, flatten(this->trace, false), sv);
-
-    std::unordered_map<uint32_t, int> starts;
-    std::unordered_map<uint32_t, int> ends;
 
     for (auto& [id, obj] : blocks) {
         obj->prevs.clear();

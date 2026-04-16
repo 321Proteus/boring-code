@@ -60,8 +60,68 @@ std::vector<uint32_t> flatten(const BCTrace& t, bool blocks_only = false) {
     return flat;  
 }
 
+BCTrace inflate(const BCDatabase& db, const BCTrace& flat, const BCTrace& src, BCStatusViewModel& sv) {
+    
+    BCTrace out;
+    out.steps.reserve(src.size());
+    
+    auto matches_body = [&](int start, const BCLoop* lp) -> bool {
+        for (int j=0;j<lp->raw_body.size();j++) {
+            if (start+j >= src.steps.size()) return false;
+            auto* val = std::get_if<uint32_t>(&src.steps[start+j]);
+            if (!val) return false;
+            if (*val != lp->raw_body[j]) return false;
+        }
+        return true;
+    };
+
+    sv.setup_job("Re-inflating loops", flat.size());
+    int si = 0;
+    int ti = 0;
+
+    while (ti < flat.size()) {
+        std::visit(Overload {
+
+            [&](uint32_t id) {
+                if (id >= LOOP_ID_OFFSET) {
+                    BCLoop* loop = db.getLoopById(id - LOOP_ID_OFFSET);
+                    int loop_size = loop->raw_body.size();
+                    int it_count = 0;
+                    while (si + loop_size <= (int)src.size() &&
+                        matches_body(si, loop)) {
+                        it_count++;
+                        si += loop_size;
+                    }
+
+                    out.push_loop(loop->id, it_count);
+                    ti++;
+
+                } else {
+                    out.push_block(id);
+                    si++;
+                    ti++;
+                }
+            },
+
+            [&](BCLoopInstance li) {
+                out.push_loop(li);
+                si += db.getLoopById(li.loop_id)->raw_body.size() * li.iterations;
+                ti++;
+            }
+
+        }, flat.steps[ti]);
+        sv.update_job_progress(si);
+    }
+
+    return out;
+}
+
+
 void map_successors(BCDatabase& db, const std::vector<uint32_t>& t, BCStatusViewModel& sv) {
     sv.setup_job("Mapping successors", t.size());
+
+    db.next_map.clear();
+    db.prev_map.clear();
 
     for (size_t i=0;i<t.size()-1;i++) {
         db.next_map[t[i]][t[i+1]]++;
@@ -146,7 +206,8 @@ BCTrace build_chains(BCDatabase& db, const BCTrace& input, BCStatusViewModel& sv
 
     sv.update_job_progress(flat.size());
     
-    return trace;
+    return inflate(db, trace, input, sv);
+
 }
 
 BCTrace deloop(BCDatabase& db, const BCTrace& src, BCStatusViewModel& sv) {
@@ -277,7 +338,7 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
 
     BCTrace t2 = deloop(db, t1, sv);
 
-    // t2 = build_chains(db, t2, sv, false);
+    t2 = build_chains(db, t2, sv, false);
 
     std::cout
         << "\nAnalysis done with " << db.blocks.size() << " unique blocks and "
