@@ -202,7 +202,7 @@ BCTrace build_chains(BCDatabase& db, const BCTrace& input, BCStatusViewModel& sv
         sv.update_job_progress(i);
     }
 
-    std::cout << "Added " << new_blocks << " new blocks\n";
+    printf("Found %d new blocks and merged %zu lines of trace\n", new_blocks, trace.size());
 
     sv.update_job_progress(flat.size());
     
@@ -290,6 +290,10 @@ BCTrace deloop(BCDatabase& db, const BCTrace& src, BCStatusViewModel& sv) {
         //     s, loops_found, instances_found, total_its, t.steps.size());
 
     }
+
+
+    printf("Found %zu loops and compressed down to %zu lines of trace\n", db.loops.size(), t.size());
+
     return t;
 
 }
@@ -314,8 +318,8 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
     db.crc_hash = hash;
 
     sv.setup_job("Loading trace", (size - (uint64_t)f.tellg()) / (is_x64 ? 8 : 4));
-    int read = 0;
 
+    int read = 0;
     BCAddr a = 0;
     uint32_t bblk_id = 1;
 
@@ -327,31 +331,22 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
         a = 0;
     }
 
-    std::cout << "Loaded " << bblk_id-1 << " basic blocks\n";
-
     printf("Architecture: %s \nHash: %04X \nBase: %08lX\n", (is_x64 ? "x64" : "x86"), hash, base);
+    printf("Loaded %zu basic blocks an %zu trace steps\n", db.basic_blocks.size(), raw_data.size());
 
     BCTrace t1 = build_chains(db, raw_data, sv, true);
-
-    std::cout << "\nFound " << db.blocks.size() << " unique blocks and merged " << t1.steps.size()
-        << " lines of trace\n";
-
     BCTrace t2 = deloop(db, t1, sv);
+    BCTrace t3 = build_chains(db, t2, sv, false);
 
-    t2 = build_chains(db, t2, sv, false);
+    std::cout << "Saving...\n";
 
-    std::cout
-        << "\nAnalysis done with " << db.blocks.size() << " unique blocks and "
-        << t2.steps.size() << " lines of trace. Saving..." << std::endl;
-
-    db.apply_trace(t2);
+    db.apply_trace(t3);
     db.apply_prevs_nexts(sv);
-
     db.find_hot_cold_blocks(sv);
 
     std::ofstream out("final_timeline.txt");
     
-    for (const TraceStep& s : t2.steps) {
+    for (const TraceStep& s : t3.steps) {
         std::visit(Overload {
             [&](uint32_t blk_id) {
                 if (blk_id >= BLOCK_ID_OFFSET) {
