@@ -15,9 +15,16 @@ else()
     set_target_properties(boringtool PROPERTIES OUTPUT_NAME "boringtool")
 endif()
 
-set(DR_EXT "/opt/dynamorio/ext")
+if(WIN32)
+    set(DR_EXT "C:/drio/ext/")
+endif(WIN32)
+
+if(UNIX)
+    set(DR_EXT "/opt/dynamorio/ext")
+endif(UNIX)
+
 target_include_directories(boringtool PRIVATE ${DR_EXT}/include)
 # target_link_directories(boringtool PRIVATE ${DR_EXT}/lib64)
-target_link_libraries(boringtool drmgr z)
+target_link_libraries(boringtool drmgr ZLIB::ZLIB)
 
 configure_DynamoRIO_client(boringtool)
