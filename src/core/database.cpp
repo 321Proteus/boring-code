@@ -58,11 +58,7 @@ void BCDatabase::apply_prevs_nexts(BCStatusViewModel& sv) {
             BCObject* from_obj = resolve_object(from_id);
             if (!from_obj) continue;
 
-            vec.push_back(Neighbor{
-                .id = from_id,
-                .name = from_obj->name,
-                .count = count
-            });
+            vec.push_back(Neighbor{ from_id, from_obj->name, count });
         }
     }
 
