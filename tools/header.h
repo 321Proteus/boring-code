@@ -12,6 +12,12 @@ static const bool x64 = true;
 static const bool x64 = false;
 #endif
 
+#ifdef _WIN32
+    #define MAX_PATH_LENGTH 260
+#else
+    #define MAX_PATH_LENGTH 4096
+#endif
+
 #pragma pack(push, 1)
 typedef struct {
     char magic[4];
@@ -20,6 +26,38 @@ typedef struct {
     uint32_t hash;
     uint64_t base;
 } Header;
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+typedef struct {
+    uintptr_t pc_start;
+} bc_block_trace;
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+typedef struct {
+    uint32_t sysnum;
+    uint8_t arg_count;
+    uintptr_t args[8];
+    uintptr_t retval;
+} bc_syscall_trace;
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+typedef struct {
+    uint32_t code;
+    uintptr_t pc;
+    uintptr_t xax, xbx, xcx, xdx;
+    uintptr_t xsi, xdi, xbp, xsp;
+} bc_exception_trace;
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+typedef struct {
+    uint8_t reg_id;
+    uintptr_t instr_pc;
+    uintptr_t value;
+} bc_value_trace;
 #pragma pack(pop)
 
 uint32_t compute_crc32(const char* path) {
