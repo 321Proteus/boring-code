@@ -2,6 +2,7 @@
 #include <cassert>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <ios>
 #include <ostream>
@@ -314,24 +315,34 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
     BCAddr base; f.read(reinterpret_cast<char*>(&base), 8);
 
     BCDatabase db;
+    db.is_x64 = is_x64;
     db.base_address = base;
     db.crc_hash = hash;
 
     sv.setup_job("Loading trace", (size - (uint64_t)f.tellg()) / (is_x64 ? 8 : 4));
 
-    int read = 0;
+    std::vector<char> buffer(size - f.tellg());
+    f.read(buffer.data(), buffer.size());
+
+    const char* ptr = buffer.data();
+    const char* end = ptr + buffer.size();
+
+    raw_data.steps.reserve(buffer.size() / (is_x64 ? 8 : 4));
+
+    int count = 0;
     BCAddr a = 0;
     uint32_t bblk_id = 1;
+    while (ptr < end) {
 
-    while (f.read((char*)&a, (is_x64 ? 8 : 4))) {
+        BCAddr a = is_x64 ? *reinterpret_cast<const uint64_t*>(ptr) : *reinterpret_cast<const uint32_t*>(ptr);
+        ptr += (is_x64 ? 8 : 4);
         auto res = db.insert<BCBasicBlock>(bblk_id, a);
         raw_data.push_block(res.id);
         if (res.created) bblk_id++;
-        sv.update_job_progress(read++);
-        a = 0;
+        sv.update_job_progress(count++);
     }
 
-    printf("Architecture: %s \nHash: %04X \nBase: %08lX\n", (is_x64 ? "x64" : "x86"), hash, base);
+    printf("Architecture: %s \nHash: %X \nBase: %016lX\n", (is_x64 ? "x64" : "x86"), hash, base);
     printf("Loaded %zu basic blocks an %zu trace steps\n", db.basic_blocks.size(), raw_data.size());
 
     BCTrace t1 = build_chains(db, raw_data, sv, true);

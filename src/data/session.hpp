@@ -2,6 +2,7 @@
 
 #include "core/database.hpp"
 #include "core/loader.hpp"
+#include "data/provider.hpp"
 #include "ui/view.hpp"
 #include <map>
 #include <memory>
@@ -18,6 +19,10 @@ public:
     BCTraceViewModel* trace_view = nullptr;
     BCDetailsViewModel* details_view = nullptr;
     BCStatusViewModel* status_view = nullptr;
+
+    std::unique_ptr<BCCodeProvider> code_provider;
+
+    uint32_t checksum;
 
     template<typename T>
     void set(const std::string& key, T value) {
@@ -50,6 +55,7 @@ public:
         database = std::make_unique<BCDatabase>(
             load_database(path, (model ? *model : *status_view))
         );
+        this->checksum = database->crc_hash;
     }
 
 };

@@ -18,7 +18,19 @@
     <item>
      <layout class="QVBoxLayout" name="leftLayout">
       <item>
-       <widget class="QListWidget" name="BlockView"/>
+       <widget class="QListWidget" name="CodeView">
+        <property name="font">
+         <font>
+          <family>Monospace</family>
+          <pointsize>10</pointsize>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QListWidget::item {
+    height: 18px;
+}</string>
+        </property>
+       </widget>
       </item>
       <item>
        <layout class="QVBoxLayout" name="progressLayout">

@@ -33,7 +33,10 @@ public:
 
     BCObject(uint32_t id, const std::string& name)
         : id(id), name(name) {}
+
+    virtual std::vector<BCAddr> get_code_addrs() const = 0;
     virtual void dispatch_details(const BCDetailsViewModel& vm) const = 0;
+
     virtual ~BCObject() = default;
 };
 
@@ -48,6 +51,7 @@ public:
     BCBlock(uint32_t id, std::vector<BCObject*> members)
         : BCObject(id, "BLK_" + std::to_string(id)), members(std::move(members)) {}
 
+    std::vector<BCAddr> get_code_addrs() const;
     void dispatch_details(const BCDetailsViewModel& vm) const;
 
 };
@@ -58,6 +62,7 @@ public:
     BCBasicBlock(uint32_t id, BCAddr address)
         : BCObject(id, to_hex(address)), address(address) {}
 
+    std::vector<BCAddr> get_code_addrs() const;
     void dispatch_details(const BCDetailsViewModel& vm) const;
 
 };
@@ -70,6 +75,7 @@ public:
     BCLoop(uint32_t id, Iterator begin, Iterator end)
         : BCObject(id, "LOOP_" + std::to_string(id)), raw_body(begin, end) {}
 
+    std::vector<BCAddr> get_code_addrs() const;
     void dispatch_details(const BCDetailsViewModel& vm) const;
     
 };

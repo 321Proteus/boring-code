@@ -30,6 +30,7 @@ public:
     std::unordered_map<uint32_t, std::unique_ptr<BCLoop>> loops;
     
     BCTrace trace;
+    bool is_x64;
 
     std::unordered_map<BCAddr, uint32_t> basic_blocks_addrs; 
     std::unordered_map<uint64_t, std::vector<uint32_t>> loop_hashes;
