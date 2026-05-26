@@ -1,9 +1,7 @@
 #include "view.hpp"
-#include "core/database.hpp"
-#include "core/loader.hpp"
-#include "core/overload.hpp"
-#include <string>
-#include <variant>
+#include "database.hpp"
+#include <memory>
+#include <vector>
 
 std::shared_ptr<std::vector<BCTraceEntry>> BCTraceViewModel::precompute_trace(const BCDatabase& db, BCStatusViewModel& sv) {
     const auto& tr = db.trace;

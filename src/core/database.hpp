@@ -12,7 +12,7 @@
 #include "address.hpp"
 #include "object.hpp"
 #include "loader.hpp"
-#include "ui/view.hpp"
+#include "core/view.hpp"
 #include "util/hash.h"
 
 class BCBlock;

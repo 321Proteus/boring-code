@@ -3,7 +3,7 @@
 #include "core/database.hpp"
 #include "core/loader.hpp"
 #include "data/provider.hpp"
-#include "ui/view.hpp"
+#include "core/view.hpp"
 #include <map>
 #include <memory>
 #include <string>

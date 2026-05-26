@@ -15,7 +15,7 @@
 #include "view.hpp"
 #include "worker.hpp"
 #include "data/session.hpp"
-#include "ui/view.hpp"
+#include "core/view.hpp"
 #include <QDragEnterEvent>
 #include <QMimeData>
 #include <QDropEvent>

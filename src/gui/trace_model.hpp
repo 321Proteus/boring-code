@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ui/view.hpp"
+#include "core/view.hpp"
 #include <QAbstractListModel>
 #include <QAbstractItemModel>
 #include <QVariant>

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "app/view.hpp"
+#include "gui/view.hpp"
 #include "data/session.hpp"
-#include "ui/view.hpp"
+#include "core/view.hpp"
 #include <QObject>
 #include <atomic>
 #include <iostream>

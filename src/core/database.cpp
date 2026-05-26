@@ -8,7 +8,7 @@
 #include <vector>
 #include "core/object.hpp"
 #include "overload.hpp"
-#include "ui/view.hpp"
+#include "core/view.hpp"
 
 void BCDatabase::apply_prevs_nexts(BCStatusViewModel& sv) {
 

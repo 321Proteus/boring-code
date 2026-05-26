@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ui/view.hpp"
+#include "core/view.hpp"
 #include <QListView>
 #include <QTreeWidget>
 #include <QProgressBar>

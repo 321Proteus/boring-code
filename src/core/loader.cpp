@@ -15,7 +15,7 @@
 #include <variant>
 #include <vector>
 #include "core/object.hpp"
-#include "ui/view.hpp"
+#include "core/view.hpp"
 #include "overload.hpp"
 
 #include "database.hpp"

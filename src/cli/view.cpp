@@ -1,6 +1,6 @@
 #include "view.hpp"
 #include "core/object.hpp"
-#include "ui/view.hpp"
+#include "core/view.hpp"
 #include <iostream>
 
 void display_object_info(const BCObject& object) {

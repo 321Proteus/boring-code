@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ui/view.hpp"
+#include "core/view.hpp"
 #include "overload.hpp"
 #include <variant>
 #include <vector>

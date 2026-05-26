@@ -1,8 +1,8 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include "app/view.hpp"
-#include "app/worker.hpp"
+#include "gui/view.hpp"
+#include "gui/worker.hpp"
 #include "core/loader.hpp"
 #include "data/session.hpp"
 #include <QMainWindow>

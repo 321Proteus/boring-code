@@ -23,17 +23,14 @@ file(GLOB_RECURSE CORE_SOURCES
 )
 
 file(GLOB_RECURSE APP_COMMON_SOURCES
-    ui/*.cpp
-    ui/*.hpp
-    ui/*.h
     data/*.hpp
 )
 
 file(GLOB_RECURSE APP_QT_SOURCES
-    app/*.cpp
-    app/*.hpp
-    app/*.h
-    app/*.ui
+    gui/*.cpp
+    gui/*.hpp
+    gui/*.h
+    gui/*.ui
 )
 
 file(GLOB_RECURSE APP_CLI_SOURCES
