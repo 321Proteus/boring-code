@@ -45,23 +45,19 @@ else()
     set(APP_PROVIDER_DIRECT providers/direct.hpp providers/direct_unix.cpp)
 endif()
 
-add_executable(BoringCodeCLI
-    ${APP_CLI_SOURCES}
-    ${APP_COMMON_SOURCES}
-    ${APP_PROVIDER_DIRECT}
-    ${CORE_SOURCES}
-)
+add_library(BoringCodeCore STATIC ${CORE_SOURCES})
+add_library(BoringCodeAppCommon STATIC ${APP_COMMON_SOURCES})
+add_library(BoringCodeDirect STATIC ${APP_PROVIDER_DIRECT})
 
-add_executable(BoringCode
-    ${APP_QT_SOURCES}
-    ${APP_COMMON_SOURCES}
-    ${APP_PROVIDER_DIRECT}
-    ${CORE_SOURCES}
-)
+target_include_directories(BoringCodeAppCommon PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(BoringCode Qt6::Widgets ZLIB::ZLIB ${CAPSTONE_LIBRARIES})
+target_link_libraries(BoringCodeDirect PRIVATE BoringCodeCore)
+target_link_libraries(BoringCodeDirect PRIVATE BoringCodeAppCommon)
 
-target_include_directories(BoringCode PRIVATE ${CAPSTONE_INCLUDE_DIRS})
+target_link_libraries(BoringCodeAppCommon PRIVATE BoringCodeCore)
+target_link_libraries(BoringCodeAppCommon PRIVATE BoringCodeDirect)
 
-target_include_directories(BoringCode PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(BoringCodeCLI PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+add_executable(BoringCodeCLI ${APP_CLI_SOURCES})
+target_link_libraries(BoringCodeCLI PRIVATE BoringCodeAppCommon)
+
+add_subdirectory(gui)

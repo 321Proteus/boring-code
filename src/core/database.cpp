@@ -1,14 +1,14 @@
 #include "database.hpp"
-#include "core/loader.hpp"
+#include "loader.hpp"
 #include <algorithm>
 #include <cstdint>
 #include <unordered_map>
 #include <utility>
 #include <variant>
 #include <vector>
-#include "core/object.hpp"
+#include "object.hpp"
 #include "overload.hpp"
-#include "core/view.hpp"
+#include "view.hpp"
 
 void BCDatabase::apply_prevs_nexts(BCStatusViewModel& sv) {
 

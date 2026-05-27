@@ -1,6 +1,6 @@
 #pragma once
 
-#include "gui/view.hpp"
+#include "view.hpp"
 #include "data/session.hpp"
 #include "core/view.hpp"
 #include <QObject>

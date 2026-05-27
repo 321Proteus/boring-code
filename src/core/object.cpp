@@ -1,7 +1,7 @@
 
 #include "object.hpp"
-#include "core/address.hpp"
-#include "core/view.hpp"
+#include "address.hpp"
+#include "view.hpp"
 #include <vector>
 
 void BCBlock::dispatch_details(const BCDetailsViewModel& vm) const { vm.show_details(*this); }

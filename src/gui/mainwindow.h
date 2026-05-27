@@ -1,8 +1,8 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include "gui/view.hpp"
-#include "gui/worker.hpp"
+#include "view.hpp"
+#include "worker.hpp"
 #include "core/loader.hpp"
 #include "data/session.hpp"
 #include <QMainWindow>
@@ -23,6 +23,9 @@ public:
     ~MainWindow();
     void loadTraceAsync(QString path);
     void loadBinary(QString path, BCFileType type);
+
+private:
+    void setupShortcuts();
 
 private slots:
     void onSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected);

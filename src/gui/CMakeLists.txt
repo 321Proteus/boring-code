@@ -15,10 +15,7 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools)
 set(TS_FILES BoringCode_pl_PL.ts)
 
 set(PROJECT_SOURCES
-        main.cpp
-        mainwindow.cpp
-        mainwindow.h
-        mainwindow.ui
+        ${APP_QT_SOURCES}
         ${TS_FILES}
 )
 
@@ -49,7 +46,14 @@ else()
     qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 endif()
 
-target_link_libraries(BoringCode PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(BoringCode PRIVATE
+    Qt${QT_VERSION_MAJOR}::Widgets
+    BoringCodeAppCommon
+    ZLIB::ZLIB
+    ${CAPSTONE_LIBRARIES}
+)
+
+target_include_directories(BoringCode PRIVATE ${CAPSTONE_INCLUDE_DIRS})
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

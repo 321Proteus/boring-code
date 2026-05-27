@@ -14,8 +14,8 @@
 #include <unordered_set>
 #include <variant>
 #include <vector>
-#include "core/object.hpp"
-#include "core/view.hpp"
+#include "object.hpp"
+#include "view.hpp"
 #include "overload.hpp"
 
 #include "database.hpp"
@@ -346,8 +346,8 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
     printf("Loaded %zu basic blocks an %zu trace steps\n", db.basic_blocks.size(), raw_data.size());
 
     BCTrace t1 = build_chains(db, raw_data, sv, true);
-    BCTrace t2 = deloop(db, t1, sv);
-    BCTrace t3 = build_chains(db, t2, sv, false);
+    BCTrace t3 = deloop(db, t1, sv);
+    // BCTrace t3 = build_chains(db, t2, sv, false);
 
     std::cout << "Saving...\n";
 
