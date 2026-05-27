@@ -22,7 +22,9 @@
 #include <QThread>
 #include <QElapsedTimer>
 #include <QItemSelectionModel>
-#include <qobject.h>
+#include <QAbstractItemModel>
+#include <QClipboard>
+#include <QShortcut>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -34,7 +36,23 @@ MainWindow::MainWindow(Session& sess, QWidget *parent)
 {
     ui->setupUi(this);
     ui->TraceView->setSelectionMode(QAbstractItemView::ContiguousSelection);
+
+    ui->CodeView->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    ui->CodeView->setSelectionBehavior(QAbstractItemView::SelectItems);
+    
     setAcceptDrops(true);
+
+    QShortcut* copyShortcut = new QShortcut(QKeySequence::Copy, ui->CodeView);
+
+    connect(copyShortcut, &QShortcut::activated, this, [this]() {
+        QStringList lines;
+
+        for (QListWidgetItem* item : ui->CodeView->selectedItems()) {
+            lines << item->text();
+        }
+
+        QApplication::clipboard()->setText(lines.join("\n"));
+    });
 
     QtUI qtui {
         ui->TraceView,
@@ -93,28 +111,30 @@ void MainWindow::onSelectionChanged(const QItemSelection& selected, const QItemS
     BCDatabase* db = this->session.database.get();
     BCCodeProvider* prov = this->session.code_provider.get();
 
-    if (selected.size() == 1) {
+    if (selected.size() >= 1) {
 
-        QModelIndex index = indexes.first();
-        uint32_t id = index.data(Qt::UserRole).toUInt();
-        BCObject* object = db->resolve_object(id);
-        object->dispatch_details(*session.details_view);
+        ui->CodeView->clear();
+        QList<QString> code;
 
         if (prov != nullptr) {
 
-            ui->CodeView->clear();
-            QList<QString> code;
+            for (const QModelIndex& index : indexes) {
 
-            std::vector<BCAddr> code_addrs = object->get_code_addrs();
+                uint32_t id = index.data(Qt::UserRole).toUInt();
+                BCObject* object = db->resolve_object(id);
+                object->dispatch_details(*session.details_view);
 
-            for (const BCAddr address : code_addrs) {
+                std::vector<BCAddr> code_addrs = object->get_code_addrs();
 
-                std::vector<BCInstruction> bb = prov->get_bb(db->base_address, address);
+                for (const BCAddr address : code_addrs) {
 
-                for (const BCInstruction& in : bb) {
-                    QListWidgetItem* el = new QListWidgetItem();
-                    QString line = QString("%1\t%2\t%3").arg(to_hex(in.va), in.mnemonic, in.op_str);
-                    code.append(line);
+                    std::vector<BCInstruction> bb = prov->get_bb(db->base_address, address);
+
+                    for (const BCInstruction& in : bb) {
+                        QListWidgetItem* el = new QListWidgetItem();
+                        QString line = QString("%1\t%2\t%3").arg(to_hex(in.va), in.mnemonic, in.op_str);
+                        code.append(line);
+                    }
                 }
             }
             
