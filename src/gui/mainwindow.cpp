@@ -29,6 +29,7 @@
 #include <string>
 #include <vector>
 #include <zlib.h>
+#include "panel.hpp"
 
 MainWindow::MainWindow(Session& sess, QWidget *parent)
     : QMainWindow(parent), session(sess)
@@ -50,13 +51,14 @@ MainWindow::MainWindow(Session& sess, QWidget *parent)
         for (QListWidgetItem* item : ui->CodeView->selectedItems()) {
             lines << item->text();
         }
-
+        
         QApplication::clipboard()->setText(lines.join("\n"));
     });
 
     QtUI qtui {
         ui->TraceView,
         ui->DetailsView,
+        ui->CodeView,
         ui->ProgressBar,
         ui->ProgressText
     };
@@ -66,6 +68,10 @@ MainWindow::MainWindow(Session& sess, QWidget *parent)
     session.trace_view = view.get();
     session.details_view = view.get();
     session.status_view = view.get();
+    
+    TracePanel* trace_panel = new TracePanel(ui->rightLayout, ui->TraceView);
+    CodePanel* code_panel = new CodePanel(ui->leftLayout, ui->CodeView);
+
 }
 
 MainWindow::~MainWindow()
