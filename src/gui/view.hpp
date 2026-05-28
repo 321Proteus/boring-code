@@ -1,15 +1,17 @@
 #pragma once
 
 #include "core/view.hpp"
-#include <QListView>
+#include <QTableView>
 #include <QTreeWidget>
 #include <QProgressBar>
 #include <QString>
 #include <QLabel>
+#include <QListWidget>
 
 struct QtUI {
-    QListView* trace_view;
+    QTableView* trace_view;
     QTreeWidget* details_view;
+    QListWidget* code_view;
     QProgressBar* progress_bar;
     QLabel* progress_text;
 };

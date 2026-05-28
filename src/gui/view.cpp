@@ -147,7 +147,6 @@ void QtViewModel::show_details(const BCLoop& loop) const {
 void QtViewModel::show_trace(std::shared_ptr<std::vector<BCTraceEntry>> trace) const {
     auto model = new TraceModel(trace, ui.trace_view);
     ui.trace_view->setModel(model);
-    ui.trace_view->setUniformItemSizes(true);
 }
 
 void QtViewModel::setup_job(const std::string name, uint64_t size) {

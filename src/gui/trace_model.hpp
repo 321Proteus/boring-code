@@ -20,7 +20,7 @@ public:
         if (!index.isValid())
             return {};
 
-        BCTraceEntry e = entries->at(index.row());
+        const BCTraceEntry& e = entries->at(index.row());
 
         if (role == Qt::DisplayRole) return QString::fromStdString(e.name);
         if (role == Qt::UserRole) return e.id;
