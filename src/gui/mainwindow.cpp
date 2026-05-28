@@ -117,7 +117,7 @@ void MainWindow::onSelectionChanged(const QItemSelection& selected, const QItemS
     BCDatabase* db = this->session.database.get();
     BCCodeProvider* prov = this->session.code_provider.get();
 
-    if (selected.size() >= 1) {
+    if (selected.size() > 1) {
 
         ui->CodeView->clear();
         QList<QString> code;
@@ -128,8 +128,6 @@ void MainWindow::onSelectionChanged(const QItemSelection& selected, const QItemS
 
                 uint32_t id = index.data(Qt::UserRole).toUInt();
                 BCObject* object = db->resolve_object(id);
-                object->dispatch_details(*session.details_view);
-
                 std::vector<BCAddr> code_addrs = object->get_code_addrs();
 
                 for (const BCAddr address : code_addrs) {
@@ -147,14 +145,22 @@ void MainWindow::onSelectionChanged(const QItemSelection& selected, const QItemS
             ui->CodeView->addItems(code);
 
         }
+        
+    } else if (selected.size() == 1) {
 
+        uint32_t id = indexes.first().data(Qt::UserRole).toUInt();
+        BCObject* object = db->resolve_object(id);
+        object->dispatch_details(*session.details_view);
+    
     } else {
+
         for (int i=0;i<ui->DetailsView->topLevelItemCount();i++) {
             auto item = ui->DetailsView->topLevelItem(i);
             item->takeChildren();
             item->setText(1, "");
         }
     }
+
 }
 
 void MainWindow::loadBinary(QString path, BCFileType type) {
