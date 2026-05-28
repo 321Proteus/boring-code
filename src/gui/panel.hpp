@@ -11,6 +11,7 @@
 #include <QShortcut>
 #include <QScrollBar>
 #include <algorithm>
+#include <QElapsedTimer>
 #include <qevent.h>
 
 class SearchBarWidget : public QWidget {
@@ -152,20 +153,36 @@ private slots:
         }
 
         QAbstractItemModel* model = view->model();
-        auto found = model->match(model->index(0, 0), Qt::DisplayRole, query, -1, Qt::MatchContains);
+        QModelIndexList found;
+
+        if (lastQuery != "" && query.startsWith(lastQuery)) {
+            QModelIndexList filtered;
+            std::copy_if(lastMatches.begin(), lastMatches.end(), std::back_inserter(filtered), [&](const QModelIndex &index) {
+                return index.data(Qt::DisplayRole).toString().contains(query, Qt::CaseInsensitive);
+            });
+            found = std::move(filtered);
+        } else {
+            found = model->match(model->index(0, 0), Qt::DisplayRole, query, -1, Qt::MatchContains);
+        }
 
         int count = found.size();
-
         m_searchBar->matchLabel->setText(found.size() ? QString::number(found.size()) : "Not found");
-        if (count == 0) return;
 
         MatchScrollBar* bar = new MatchScrollBar(view);
         bar->setMatches(found, model->rowCount());
         view->setVerticalScrollBar(bar);
 
+        lastQuery = query;
+        lastMatches = found;
+
         view->setUpdatesEnabled(true);
         view->selectionModel()->blockSignals(false);
+
     }
+
+private:
+    QString lastQuery;
+    QModelIndexList lastMatches;
 
     // void searchNext();
     // void searchPrev();
@@ -173,8 +190,6 @@ private slots:
 private:
     QAbstractItemView* view;
     SearchBarWidget* m_searchBar;
-    QList<QModelIndex> matches;
-    int currentMatch = -1;
 };
 
 class TracePanel : public PanelWidget {
