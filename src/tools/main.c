@@ -8,7 +8,8 @@
 #include "dr_events.h"
 #include "dr_tools.h"
 #include "drmgr.h"
-#include "header.h"
+#include "main.h"
+#include "core/format.h"
 
 static module_entry_t   modules[MAX_MODULES];
 static uint16_t         module_count = 0;
@@ -111,8 +112,8 @@ static void event_module_load(void *drcontext, const module_data_t *info, char l
     bc_module_trace_t* mod = (bc_module_trace_t*)dr_global_alloc(sizeof(bc_module_trace_t) + path_size + 1);
 
     mod->module_id = module_count;
-    mod->start = info->start;
-    mod->end = info->end;
+    mod->start = (uint64_t)info->start;
+    mod->end = (uint64_t)info->end;
     mod->path_size = (uint16_t)path_size;
     strncpy(mod->path, path, path_size);
     mod->path[path_size] = '\0';
@@ -207,7 +208,7 @@ static char event_exception(void* drcontext, dr_exception_t* except)
     dr_mcontext_t* mc = except->mcontext;
 
     bc_exception_trace_t e = {
-        (app_pc)mc->pc,
+        (uint64_t)mc->pc,
         except->record->ExceptionCode,
         mc->xax, mc->xbx, mc->xcx, mc->xdx,
         mc->xsi, mc->xdi, mc->xbp, mc->xsp
@@ -225,7 +226,7 @@ static dr_signal_action_t event_signal(void* drcontext, dr_siginfo_t* info) {
 
     bc_exception_trace_t e = {
         info->sig,
-        (app_pc)mc->pc,
+        (uint64_t)mc->pc,
         mc->xax, mc->xbx, mc->xcx, mc->xdx,
         mc->xsi, mc->xdi, mc->xbp, mc->xsp
     };
