@@ -1,8 +1,7 @@
 bin/
 
 build/
-build64/
 *.user
 .qtcreator/
-
 .cache/
+.clangd

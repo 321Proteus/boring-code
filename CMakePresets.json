@@ -1,0 +1,49 @@
+{
+  "version": 6,
+  "configurePresets": [
+    {
+      "name": "linux-x64",
+      "displayName": "Linux x64",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/linux-x64",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "linux-x86",
+      "displayName": "Linux x86",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/linux-x86",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_C_FLAGS": "-m32",
+        "CMAKE_CXX_FLAGS": "-m32"
+      }
+    },
+    {
+      "name": "windows-x64",
+      "displayName": "Windows x64",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/windows-x64",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "VCPKG_TARGET_TRIPLET": "x64-windows"
+      }
+    },
+    {
+      "name": "windows-x86",
+      "displayName": "Windows x86",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/windows-x86",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "VCPKG_TARGET_TRIPLET": "x86-windows"
+      }
+    }
+  ]
+}

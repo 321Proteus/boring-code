@@ -1,20 +1,15 @@
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
 find_package(ZLIB REQUIRED)
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(CAPSTONE REQUIRED capstone)
-
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
+if(WIN32)
+    find_package(capstone CONFIG REQUIRED)
+    set(CAPSTONE_TARGET capstone::capstone)
+else()
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(CAPSTONE REQUIRED IMPORTED_TARGET capstone)
+    set(CAPSTONE_TARGET PkgConfig::CAPSTONE)
+endif()
 
 set(CMAKE_CXX_STANDARD 17)
-
-if(MSVC)
-    set(CMAKE_CXX_FLAGS_RELEASE "-O2")
-else()
-    set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-endif()
 
 file(GLOB_RECURSE CORE_SOURCES
     core/*.cpp
@@ -39,25 +34,30 @@ file(GLOB_RECURSE APP_CLI_SOURCES
     cli/*.h
 )
 
-if (MSVC)
+if(MSVC)
+    set(CMAKE_CXX_FLAGS_RELEASE "-O2")
     set(APP_PROVIDER_DIRECT providers/direct.hpp providers/direct_win.cpp)
 else()
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3")
     set(APP_PROVIDER_DIRECT providers/direct.hpp providers/direct_unix.cpp)
 endif()
 
 add_library(BoringCodeCore STATIC ${CORE_SOURCES})
-add_library(BoringCodeAppCommon STATIC ${APP_COMMON_SOURCES})
+add_library(BoringCodeAppCommon INTERFACE)
 add_library(BoringCodeDirect STATIC ${APP_PROVIDER_DIRECT})
 
-target_include_directories(BoringCodeAppCommon PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(BoringCodeCore PUBLIC ${CAPSTONE_TARGET})
+target_include_directories(BoringCodeCore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(BoringCodeDirect PRIVATE BoringCodeCore)
-target_link_libraries(BoringCodeDirect PRIVATE BoringCodeAppCommon)
+target_link_libraries(BoringCodeDirect PUBLIC BoringCodeCore)
 
-target_link_libraries(BoringCodeAppCommon PRIVATE BoringCodeCore)
-target_link_libraries(BoringCodeAppCommon PRIVATE BoringCodeDirect)
+target_link_libraries(BoringCodeAppCommon INTERFACE BoringCodeDirect)
 
 add_executable(BoringCodeCLI ${APP_CLI_SOURCES})
 target_link_libraries(BoringCodeCLI PRIVATE BoringCodeAppCommon)
 
-add_subdirectory(gui)
+if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+    add_subdirectory(gui)
+endif()
+
+add_subdirectory(tools)

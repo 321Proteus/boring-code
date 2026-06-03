@@ -1,5 +1,0 @@
-CompileFlags:
-  Remove: [-mno-direct-extern-access]
-  CompilationDatabase: build64
-Diagnostics:
-  Suppress: pragma-pack

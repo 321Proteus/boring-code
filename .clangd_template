@@ -1,0 +1,11 @@
+InlayHints:
+  Enabled: true
+  ParameterNames: true
+  DeducedTypes: true
+
+Diagnostics:
+  Suppress: pragma-pack
+  UnusedIncludes: Strict
+
+CompileFlags:
+  Remove: [-mno-direct-extern-access]

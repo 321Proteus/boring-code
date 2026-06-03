@@ -27,3 +27,17 @@ Ever felt overwhelmed by the CFG complexity when analyzing an obfuscated code tr
   - Common deps:
     - [zlib](https://www.zlib.net/)
 
+## Setup and Contribution
+BoringCode is built by [CMake](https://cmake.org/) with [Ninja](https://ninja-build.org/) as the generator. By default, the buildscript targets all components at x64, while x86 is only enabled for the tracer.
+
+To build, run `build.(sh/bat) <target> [--rebuild]`, where the target is the desired CMake preset.
+
+NOTE: After configuring and building, the command updates the clangd configuration by copying `.clangd-template` and appending the respective `compilationDatabase` to the config file, which resets the clangd server (in case it didn't refresh automatically, you can use Ctrl+Shift+P > "Restart Language Server" in VS Code). On Windows, it also sets MSVC environmental variables by running the matching `vcvars.bat`. **TL;DR: `.clangd` is not the place for saving configs, `.clangd_template` is!** 
+
+On Linux, dependencies can be quickly fetched by installing `qtcreator` (recommended, but `qt6-base-dev` should be enough), `dynamorio`, `pkgconf`, `libcapstone-dev` and `zlib` from your favourite package manager.
+
+On Windows, we recommend downloading:
+  - Qt using the [community installer](https://www.qt.io/development/download-qt-installer-oss)
+  - `pkgconf`, `capstone` and `zlib` from [vcpkg](https://vcpkg.io/) (**Remember to fetch from both `x86-windows` and `x64-windows` triplets!**)
+  - DynamoRIO from their [releases page](https://dynamorio.org/page_releases.html)
+The default dependency paths are listed as variables in `build.bat` - you can follow or change them to match your real locations.

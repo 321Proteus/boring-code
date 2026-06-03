@@ -1,21 +1,63 @@
 @echo off
 setlocal enabledelayedexpansion
 
-REM 32-bit build
-cmake -B build -S tools -A Win32 ^
-    -DCMAKE_BUILD_TYPE=Release ^
-    -DDynamoRIO_DIR="C:/drio/cmake" ^
-    -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake"
+set QT6_PATH="C:\Qt\6.11.1\msvc2022_64"
+set VCPKG_PATH="C:\vcpkg"
+set DYNAMORIO_PATH="C:\drio"
 
-cmake --build build --parallel %NUMBER_OF_PROCESSORS%
+if "%1"=="" (
+    echo Usage: build.bat ^<preset^> [--rebuild]
+    echo Presets: windows-x64, windows-x86
+    exit /b 1
+)
 
-REM 64-bit build
-cmake -B build64 -S . -A x64 ^
-    -DCMAKE_BUILD_TYPE=Release ^
-    -DDynamoRIO_DIR="C:/drio/cmake" ^
-    -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" ^
-    -DQt6_DIR="C:\Qt\6.11.0\msvc2022_64\lib\cmake\Qt6"
+set PRESET=%1
 
-cmake --build build64 --config Release --parallel %NUMBER_OF_PROCESSORS%
+set VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
 
-endlocal
+if not exist %VSWHERE% (
+    echo vswhere.exe not found - are you sure Visual Studio is installed?
+    exit /b 1
+)
+
+for /f "usebackq tokens=*" %%i in (`%VSWHERE% -latest -property installationPath`) do (
+    set VS_PATH=%%i
+)
+
+if "%PRESET%"=="windows-x64" (
+    set VCVARS="%VS_PATH%\VC\Auxiliary\Build\vcvars64.bat"
+) else if "%PRESET%"=="windows-x86" (
+    set VCVARS="%VS_PATH%\VC\Auxiliary\Build\vcvars32.bat"
+) else (
+    echo Unknown preset: %PRESET%
+    exit /b 1
+)
+
+if not exist %VCVARS% (
+    echo vcvars not found at %VCVARS%
+    exit /b 1
+)
+
+echo Setting up VS environment from %VCVARS%...
+call %VCVARS%
+if errorlevel 1 exit /b 1
+
+if "%2"=="--rebuild" (
+    echo Removing old build directory
+    rmdir /s /q build\%PRESET%
+)
+
+cmake --preset %PRESET% ^
+    -DDynamoRIO_DIR="%DYNAMORIO_PATH%/cmake" ^
+    -DCMAKE_TOOLCHAIN_FILE="%VCPKG_PATH%/scripts/buildsystems/vcpkg.cmake" ^
+    -DQT_DIR="%QT6_PATH%\lib\cmake\Qt6" ^
+    -DQt6_DIR="%QT6_PATH%\lib\cmake\Qt6"
+
+if errorlevel 1 exit /b 1
+
+cmake --build build\%PRESET% --parallel %NUMBER_OF_PROCESSORS%
+if errorlevel 1 exit /b 1
+
+echo Updating .clangd...
+copy .clangd_template .clangd
+echo   CompilationDatabase: build/%PRESET% >> .clangd
