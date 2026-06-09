@@ -23,7 +23,6 @@ typedef struct {
 #define TRACE_CHUNK_SIZE 10000
 typedef struct {
     bc_block_trace_t buffer[TRACE_CHUNK_SIZE];
-    int buf_idx;
     module_entry_t* last_mod;
     thread_counter_t virtual_id;
 } thread_data_t;

@@ -15,8 +15,8 @@ typedef struct {
 
 // #pragma pack(push, 1)
 typedef struct {
-    uint32_t offset;
-    module_counter_t module_id;
+    uint32_t pc_low;
+    uint16_t pc_mid;
     thread_counter_t thread_id;
 } bc_block_trace_t;
 // #pragma pack(pop)

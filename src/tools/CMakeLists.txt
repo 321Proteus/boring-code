@@ -19,6 +19,10 @@ cmake_path(GET DynamoRIO_DIR PARENT_PATH DR_EXT)
 cmake_path(APPEND DR_EXT "ext")
 
 target_include_directories(boringtool PRIVATE ${DR_EXT}/include)
-target_link_libraries(boringtool drmgr ZLIB::ZLIB BoringCodeCore)
+target_link_libraries(boringtool drmgr drreg drx ZLIB::ZLIB BoringCodeCore)
 
 configure_DynamoRIO_client(boringtool)
+
+use_DynamoRIO_extension(boringtool drmgr)
+use_DynamoRIO_extension(boringtool drreg)
+use_DynamoRIO_extension(boringtool drx)
