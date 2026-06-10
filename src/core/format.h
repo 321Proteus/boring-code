@@ -9,7 +9,8 @@ typedef struct {
     uint8_t version;
     uint8_t arch;
     uint32_t hash;
-    uint64_t base;
+    uint32_t base_low;
+    uint16_t base_mid;
 } Header;
 #pragma pack(pop)
 
@@ -42,6 +43,7 @@ typedef struct {
 typedef struct {
     uint64_t pc;
     uint32_t code;
+    thread_counter_t thread_id;
     uint64_t xax, xbx, xcx, xdx;
     uint64_t xsi, xdi, xbp, xsp;
 } bc_exception_trace_t;

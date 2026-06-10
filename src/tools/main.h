@@ -7,12 +7,17 @@
 #include <zlib.h>
 #include "counter.h"
 #include "core/format.h"
+#include "drx.h"
 
 #if defined(__x86_64__) || defined(_M_X64)
 static const bool x64 = true;
 #else
 static const bool x64 = false;
 #endif
+
+extern reg_id_t         tls_raw_base;
+extern uint32_t         tls_raw_offset;
+extern drx_buf_t*       trace_buf;
 
 typedef struct {
     app_pc start;
@@ -22,12 +27,10 @@ typedef struct {
 
 #define TRACE_CHUNK_SIZE 10000
 typedef struct {
-    bc_block_trace_t buffer[TRACE_CHUNK_SIZE];
-    module_entry_t* last_mod;
     thread_counter_t virtual_id;
 } thread_data_t;
 
-uint32_t compute_crc32(const char* path) {
+static uint32_t compute_crc32(const char* path) {
 
     file_t f = dr_open_file(path, DR_FILE_READ);
     if (f == INVALID_FILE) return 0;
@@ -46,7 +49,7 @@ uint32_t compute_crc32(const char* path) {
     return crc;
 }
 
-Header create_header(const char* path) {
+static Header create_header(const char* path) {
     Header hdr;
     hdr.magic[0] = 'B';
     hdr.magic[1] = 'C';
@@ -54,6 +57,25 @@ Header create_header(const char* path) {
     hdr.magic[3] = 'T';
     hdr.arch = x64;
     hdr.hash = (path ? compute_crc32(path) : 0);
-    hdr.version = 0x01;
+    hdr.version = BC_TRACE_FORMAT_VERSION;
     return hdr;
+}
+
+
+static inline void set_tls_vid_shifted(reg_id_t tls_raw_base, uint32_t tls_raw_offset, thread_counter_t vid) {
+    byte* tls = dr_get_dr_segment_base(tls_raw_base);
+#ifdef X64
+    *(uint64_t*)(tls + tls_raw_offset) = (uint64_t)vid << 48;
+#else
+    *(uint32_t*)(tls + tls_raw_offset) = (uint32_t)vid;
+#endif
+}
+
+static inline thread_counter_t get_tls_vid(reg_id_t tls_raw_base, uint32_t tls_raw_offset) {
+    byte* tls = dr_get_dr_segment_base(tls_raw_base);
+#ifdef X64
+    return (thread_counter_t)(*(uint64_t*)(tls + tls_raw_offset) >> 48);
+#else
+    return (thread_counter_t)(*(uint32_t*)(tls + tls_raw_offset));
+#endif
 }
