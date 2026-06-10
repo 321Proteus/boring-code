@@ -11,27 +11,33 @@ endif()
 
 set(CMAKE_CXX_STANDARD 17)
 
-file(GLOB_RECURSE CORE_SOURCES
-    core/*.cpp
-    core/*.hpp
-    core/*.h
+set(CORE_SOURCES
+    core/address.hpp
+    core/database.cpp
+    core/database.hpp
+    core/format.h
+
+    core/loader.cpp
+    core/loader.hpp
+    core/object.cpp
+    core/object.hpp
+    core/overload.hpp
+
+    core/view.hpp
+    core/view.cpp
 )
 
-file(GLOB_RECURSE APP_COMMON_SOURCES
-    data/*.hpp
+set(APP_COMMON_SOURCES
+    data/provider.hpp
+    data/session.hpp
 )
 
-file(GLOB_RECURSE APP_QT_SOURCES
-    gui/*.cpp
-    gui/*.hpp
-    gui/*.h
-    gui/*.ui
-)
+set(APP_CLI_SOURCES
+    cli/main.cpp
+    cli/commands.hpp
 
-file(GLOB_RECURSE APP_CLI_SOURCES
-    cli/*.cpp
-    cli/*.hpp
-    cli/*.h
+    cli/view.cpp
+    cli/view.hpp
 )
 
 if(MSVC)

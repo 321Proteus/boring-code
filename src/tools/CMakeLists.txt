@@ -7,7 +7,8 @@ message(STATUS "Pointer size: ${CMAKE_SIZEOF_VOID_P}")
 find_package(DynamoRIO REQUIRED)
 find_package(ZLIB REQUIRED)
 
-add_library(boringtool SHARED main.c)
+set(TOOL_SOURCES main.c record.c main.h record.h counter.h)
+add_library(boringtool SHARED ${TOOL_SOURCES})
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
     set_target_properties(boringtool PROPERTIES OUTPUT_NAME "boringtool64")

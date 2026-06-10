@@ -342,7 +342,7 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
         sv.update_job_progress(count++);
     }
 
-    printf("Architecture: %s \nHash: %X \nBase: %016lX\n", (is_x64 ? "x64" : "x86"), hash, base);
+    printf("Architecture: %s \nHash: %X \nBase: %016llX\n", (is_x64 ? "x64" : "x86"), hash, base);
     printf("Loaded %zu basic blocks an %zu trace steps\n", db.basic_blocks.size(), raw_data.size());
 
     BCTrace t1 = build_chains(db, raw_data, sv, true);

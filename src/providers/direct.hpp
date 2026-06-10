@@ -95,7 +95,7 @@ private:
                 return a.va < b.va;
             });
 
-        printf("Parsed %zu sections ranging from %lX to %lX\n", sections.size(), sections[0].va, sections.back().va + sections.back().virtual_size);
+        printf("Parsed %zu sections ranging from %llX to %llX\n", sections.size(), sections[0].va, sections.back().va + sections.back().virtual_size);
     }
 
 public:

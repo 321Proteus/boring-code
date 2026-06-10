@@ -14,6 +14,19 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools)
 
 set(TS_FILES BoringCode_pl_PL.ts)
 
+set(APP_QT_SOURCES
+    main.cpp
+    mainwindow.cpp
+    mainwindow.h
+    mainwindow.ui
+
+    panel.hpp
+    trace_model.hpp
+    view.cpp
+    view.hpp
+    worker.hpp
+)
+
 set(PROJECT_SOURCES
         ${APP_QT_SOURCES}
         ${TS_FILES}

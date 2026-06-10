@@ -4,6 +4,7 @@ setlocal enabledelayedexpansion
 set QT6_PATH="C:\Qt\6.11.1\msvc2022_64"
 set VCPKG_PATH="C:\vcpkg"
 set DYNAMORIO_PATH="C:\drio"
+set VULKAN_PATH="C:\VulkanSDK\1.4.350.0"
 
 if "%1"=="" (
     echo Usage: build.bat ^<preset^> [--rebuild]
@@ -51,7 +52,8 @@ cmake --preset %PRESET% ^
     -DDynamoRIO_DIR="%DYNAMORIO_PATH%/cmake" ^
     -DCMAKE_TOOLCHAIN_FILE="%VCPKG_PATH%/scripts/buildsystems/vcpkg.cmake" ^
     -DQT_DIR="%QT6_PATH%\lib\cmake\Qt6" ^
-    -DQt6_DIR="%QT6_PATH%\lib\cmake\Qt6"
+    -DQt6_DIR="%QT6_PATH%\lib\cmake\Qt6" ^
+    -DVulkan_INCLUDE_DIR="%VULKAN_PATH%\cmake"
 
 if errorlevel 1 exit /b 1
 
