@@ -61,6 +61,8 @@ static Header create_header(const char* path) {
     return hdr;
 }
 
+static void write_event(void* drcontext, void* ptr, size_t size, bc_trace_event_header_t header);
+
 
 static inline void set_tls_vid_shifted(reg_id_t tls_raw_base, uint32_t tls_raw_offset, thread_counter_t vid) {
     byte* tls = dr_get_dr_segment_base(tls_raw_base);

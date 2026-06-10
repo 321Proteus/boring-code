@@ -5,8 +5,35 @@
 #include <string>
 #include <vector>
 
+enum class BCObjectType : uint8_t { BasicBlock, Block, Loop };
+
+struct BCObjectId {
+    uint64_t raw = 0;
+
+    BCObjectId() = default;
+    BCObjectId(uint32_t index, BCObjectType type)
+        : raw((uint64_t)index | ((uint64_t)type << 32)) {}
+    explicit BCObjectId(uint64_t raw) : raw(raw) {}
+    
+    uint32_t index() const { return (uint32_t)(raw & 0xFFFFFFFF); }
+    BCObjectType type() const { return (BCObjectType)(raw >> 32); }
+
+    bool operator==(const BCObjectId& o) const { return raw == o.raw; }
+    bool operator!=(const BCObjectId& o) const { return raw != o.raw; }
+    bool operator<(const BCObjectId& other) const { return raw < other.raw; }
+    explicit operator uint64_t() const { return raw; }
+
+};
+
+namespace std {
+    template<> struct hash<BCObjectId> {
+        size_t operator()(const BCObjectId& id) const noexcept {
+            return hash<uint64_t>{}( id.raw );
+        }
+    };
+}
 struct Neighbor {
-    uint32_t id;
+    BCObjectId id;
     std::string name;
     int count;
 };
@@ -23,7 +50,7 @@ class BCDatabase;
 struct BCObject {
 public:
 
-    uint32_t id;
+    BCObjectId id;
     std::string name;
 
     std::vector<Neighbor> prevs;
@@ -31,7 +58,7 @@ public:
     
     RankedValue<uint32_t> usage_count;
 
-    BCObject(uint32_t id, const std::string& name)
+    BCObject(BCObjectId id, const std::string& name)
         : id(id), name(name) {}
 
     virtual std::vector<BCAddr> get_code_addrs() const = 0;
@@ -48,8 +75,8 @@ public:
 
     RankedValue<uint32_t> instr_count;
 
-    BCBlock(uint32_t id, std::vector<BCObject*> members)
-        : BCObject(id, "BLK_" + std::to_string(id)), members(std::move(members)) {}
+    BCBlock(BCObjectId id, std::vector<BCObject*> members)
+        : BCObject(id, "BLK_" + std::to_string(id.index())), members(std::move(members)) {}
 
     std::vector<BCAddr> get_code_addrs() const;
     void dispatch_details(const BCDetailsViewModel& vm) const;
@@ -59,7 +86,7 @@ public:
 class BCBasicBlock : public BCObject {
 public:
     BCAddr address;
-    BCBasicBlock(uint32_t id, BCAddr address)
+    BCBasicBlock(BCObjectId id, BCAddr address)
         : BCObject(id, to_hex(address)), address(address) {}
 
     std::vector<BCAddr> get_code_addrs() const;
@@ -69,11 +96,11 @@ public:
 struct BCLoop : public BCObject {
 public:
     std::vector<BCObject*> body;
-    std::vector<uint32_t> raw_body;
+    std::vector<BCObjectId> raw_body;
 
     template<typename Iterator>
-    BCLoop(uint32_t id, Iterator begin, Iterator end)
-        : BCObject(id, "LOOP_" + std::to_string(id)), raw_body(begin, end) {}
+    BCLoop(BCObjectId id, Iterator begin, Iterator end)
+        : BCObject(id, "LOOP_" + std::to_string(id.index())), raw_body(begin, end) {}
 
     std::vector<BCAddr> get_code_addrs() const;
     void dispatch_details(const BCDetailsViewModel& vm) const;
@@ -81,6 +108,6 @@ public:
 };
 
 struct BCLoopInstance {
-    uint32_t loop_id;
+    BCObjectId loop_id;
     uint32_t iterations;
 };

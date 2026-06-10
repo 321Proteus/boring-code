@@ -1,4 +1,5 @@
 #include "view.hpp"
+#include "core/object.hpp"
 #include "database.hpp"
 #include <memory>
 #include <vector>
@@ -14,12 +15,12 @@ std::shared_ptr<std::vector<BCTraceEntry>> BCTraceViewModel::precompute_trace(co
     for (uint64_t i=0;i<size;i++) {
         TraceStep step = tr.steps[i];
         std::visit(Overload {
-            [&](uint32_t blk_id) {
-                trace_list->push_back({ blk_id, db.resolve_object(blk_id)->name });
+            [&](BCObjectId id) {
+                trace_list->push_back({ id, db.store.get(id)->name });
             },
             [&](BCLoopInstance li) {
-                BCLoop* loop = db.getLoopById(li.loop_id);
-                trace_list->push_back({ li.loop_id + LOOP_ID_OFFSET, loop->name + " (x" + std::to_string(li.iterations) + ")" });
+                BCLoop* loop = db.store.get_loop(li.loop_id);
+                trace_list->push_back({ li.loop_id, loop->name + " (x" + std::to_string(li.iterations) + ")" });
             }
         }, step);
         sv.update_job_progress(i);

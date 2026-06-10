@@ -60,12 +60,14 @@ typedef struct {
 #pragma pack(pop)
 
 typedef enum {
-    EV_BBL = 0x1,
-    EV_MODULE = 0x2,
-    EV_SYSCALL = 0x3,
-    EV_EXPCETION = 0x4
+    EV_BBL,
+    EV_MODULE,
+    EV_SYSCALL,
+    EV_EXCEPTION
 } bc_trace_event_type_t;
 
 typedef struct {
+    uint8_t reserved;
     uint8_t type;
+    uint16_t count;
 } bc_trace_event_header_t;

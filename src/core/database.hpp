@@ -3,8 +3,6 @@
 #include <cstdint>
 #include <memory>
 #include <string>
-#include <tuple>
-#include <type_traits>
 #include <unordered_map>
 #include <map>
 #include <vector>
@@ -18,134 +16,84 @@
 class BCBlock;
 
 struct BCInsertionResult {
-    uint32_t id;
+    BCObjectId id;
     bool created;
 };
 
-class BCDatabase {
+class BCObjectStore {
 public:
-    std::unordered_map<std::string, uint32_t> names;
-    std::unordered_map<uint32_t, std::unique_ptr<BCBasicBlock>> basic_blocks;
-    std::unordered_map<uint32_t, std::unique_ptr<BCBlock>> blocks;
-    std::unordered_map<uint32_t, std::unique_ptr<BCLoop>> loops;
-    
-    BCTrace trace;
-    bool is_x64;
 
-    std::unordered_map<BCAddr, uint32_t> basic_blocks_addrs; 
-    std::unordered_map<uint64_t, std::vector<uint32_t>> loop_hashes;
-    
-    std::unordered_map<uint32_t, std::map<uint32_t, int>> next_map;
-    std::unordered_map<uint32_t, std::map<uint32_t, int>> prev_map;
+    BCBlock*            get_block(BCObjectId id) const;
+    BCBasicBlock*       get_bbl(BCObjectId id) const;
+    BCLoop*             get_loop(BCObjectId id) const;
 
-    BCAddr base_address;
-    uint32_t crc_hash;
+    BCObject*           get(BCObjectId id) const;
+    BCBasicBlock*       get_by_addr(BCAddr address) const;
+    BCObject*           get_by_name(const std::string& name) const;
 
-    template<typename T, typename... Args>
-    BCInsertionResult insert(uint32_t id, Args&&... args) {
+    BCInsertionResult   insert_basic_block(BCAddr addr);
+    BCInsertionResult   insert_block(const std::vector<BCObject*> members);
 
-        // std::string name = obj.get()->name;
-        // auto name_it = names.find(name);
-        // if (name_it != names.end()) return { name_it->second, false };
+    template <typename Iterator>
+    BCInsertionResult insert_loop(Iterator begin, Iterator end) {
+
+        uint64_t h = hash_window(begin, end);
         
-        if constexpr (std::is_same_v<T, BCBlock>) {
-
-            auto it = blocks.find(id);
-            if (it != blocks.end()) return { it->first, false };
-            
-            std::unique_ptr<T> obj = std::make_unique<T>(id, std::forward<Args>(args)...);
-            names[obj.get()->name] = id + BLOCK_ID_OFFSET;
-            blocks.emplace(id, std::move(obj));
-
-        } else if constexpr (std::is_same_v<T, BCBasicBlock>) {
-
-            BCAddr addr = std::get<0>(std::forward_as_tuple(args...));
-            auto it = basic_blocks_addrs.find(addr);
-            if (it != basic_blocks_addrs.end()) return { it->second, false };
-
-            std::unique_ptr<T> obj = std::make_unique<T>(id, std::forward<Args>(args)...);
-            names[obj.get()->name] = id;
-            basic_blocks.emplace(id, std::move(obj));
-            basic_blocks_addrs[addr] = id;
-
-        } else if constexpr (std::is_same_v<T, BCLoop>) {
-
-            auto args_tuple = std::forward_as_tuple(args...);
-            auto begin = std::get<0>(args_tuple);
-            auto end = std::get<1>(args_tuple);
-
-            uint64_t h = hash_window(begin, end);
-            
-            auto loop_it = loop_hashes.find(h);
-            if (loop_it != loop_hashes.end()) {
-                for (uint32_t match : loop_it->second) {
-                    if (loops.at(match)->raw_body == loops.at(match)->raw_body) {
-                        return { match, false };
-                    }
+        auto loop_it = loop_hashes_.find(h);
+        if (loop_it != loop_hashes_.end()) {
+            for (uint32_t match : loop_it->second) {
+                const auto& existing = loops_.at(match);
+                if (std::equal(begin, end, existing->raw_body.begin(), existing->raw_body.end())) {
+                    return { { match, BCObjectType::Loop }, false };
                 }
             }
-
-            std::unique_ptr<T> obj = std::make_unique<T>(id, std::forward<Args>(args)...);
-            for (uint32_t r : obj.get()->raw_body) {
-                obj->body.push_back(resolve_object(r));
-            }
-
-            names[obj.get()->name] = id + LOOP_ID_OFFSET;
-            loops.emplace(id, std::move(obj));
-            loop_hashes[h].push_back(id);
-
-        } else {
-
-            static_assert(!sizeof(T), "Unsupported type");
-            return { 0, false };
-
         }
+
+        BCObjectId id = { next_loop_id_++, BCObjectType::Loop };
+
+        std::unique_ptr<BCLoop> obj = std::make_unique<BCLoop>(id, begin, end);
+        for (BCObjectId r : obj.get()->raw_body) {
+            obj->body.push_back(get(r));
+        }
+
+        names_[obj.get()->name] = id;
+        loops_.push_back(std::move(obj));
+        loop_hashes_[h].push_back(id.index());
 
         return { id, true };
 
     }
 
-    BCObject* resolve_object(uint32_t id) const {
-        if (id >= LOOP_ID_OFFSET) {
-            return loops.at(id - LOOP_ID_OFFSET).get();
-        } else if (id >= BLOCK_ID_OFFSET) {
-            return blocks.at(id - BLOCK_ID_OFFSET).get();
-        } else {
-            return basic_blocks.at(id).get();
-        }
-    }
+    auto const& basic_blocks() const { return basic_blocks_; };
+    auto const& blocks() const { return blocks_; };
+    auto const& loops() const { return loops_; };
 
-    bool rename(uint32_t id, std::string newName);
+private:
+    std::vector<std::unique_ptr<BCBasicBlock>> basic_blocks_;
+    std::vector<std::unique_ptr<BCBlock>>      blocks_;
+    std::vector<std::unique_ptr<BCLoop>>       loops_;
 
-    BCBlock* getBlockByName(const std::string& name) const {
-        auto it = names.find(name);
-        return (it != names.end()) ? getBlockById(it->second) : nullptr;
-    }
+    std::unordered_map<BCAddr, uint32_t>                        basic_blocks_addrs_;
+    std::unordered_map<std::string, BCObjectId>                 names_;
+    std::unordered_map<uint64_t, std::vector<uint32_t>>         loop_hashes_;
 
-    BCBasicBlock* getBasicBlockByName(const std::string& name) const {
-        auto it = names.find(name);
-        return (it != names.end()) ? getBasicBlockById(it->second) : nullptr;
-    }
+    uint32_t next_bbl_id_   = 0;
+    uint32_t next_block_id_ = 0;
+    uint32_t next_loop_id_  = 0;
+};
 
-    BCLoop* getLoopByName(const std::string& name) const {
-        auto it = names.find(name);
-        return (it != names.end()) ? getLoopById(it->second) : nullptr;
-    }
+class BCDatabase {
+public:
+    
+    BCObjectStore store;
+    
+    BCTrace trace;
+    
+    std::unordered_map<BCObjectId, std::map<BCObjectId, int>> next_map;
+    std::unordered_map<BCObjectId, std::map<BCObjectId, int>> prev_map;
 
-    BCBlock* getBlockById(uint32_t id) const {
-        auto it = blocks.find(id);
-        return (it != blocks.end()) ? it->second.get() : nullptr;
-    }
-
-    BCBasicBlock* getBasicBlockById(uint32_t id) const {
-        auto it = basic_blocks.find(id);
-        return (it != basic_blocks.end()) ? it->second.get() : nullptr;
-    }
-
-    BCLoop* getLoopById(uint32_t id) const {
-        auto it = loops.find(id);
-        return (it != loops.end()) ? it->second.get() : nullptr;
-    }
+    BCAddr base_address;
+    uint32_t crc_hash;
 
     void apply_prevs_nexts(BCStatusViewModel& sv);
     void apply_trace(const BCTrace& trace);

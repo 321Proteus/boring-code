@@ -1,5 +1,5 @@
-#include <cstdint>
-#include <cstring>
+#include <stdint.h>
+#include <string.h>
 
 static constexpr uint64_t MOD = (1ULL << 61) - 1;
 

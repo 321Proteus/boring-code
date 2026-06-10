@@ -19,7 +19,8 @@ int main(int argc, char *argv[])
     }
 
     Session session;
-
+    if (argv[1]) session.set("path", std::string(argv[1]));
+    
     MainWindow w(session);
     w.show();
     return a.exec();

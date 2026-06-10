@@ -41,27 +41,34 @@ static void flush_buf_part(void* drcontext) {
     void* base = drx_buf_get_buffer_base(drcontext, trace_buf);
     void* ptr = drx_buf_get_buffer_ptr(drcontext, trace_buf);
     size_t remaining = (byte*)ptr - (byte*)base;
-    dr_printf("Flushing %d buffer entries\n", (int)(remaining / sizeof(bc_block_trace_t)));
+    size_t rem_count = (int)(remaining / sizeof(bc_block_trace_t));
+    dr_printf("Flushing %d (%td) buffer entries\n", rem_count, remaining);
 
     if (remaining > 0) {
-        dr_mutex_lock(write_lock);
-        dr_write_file(out_file, base, remaining);
-        dr_mutex_unlock(write_lock);
+        bc_trace_event_header_t part_header = { 0xFF, EV_BBL, rem_count };
+        write_event(drcontext, base, remaining, part_header);
     }
+}
+
+static void write_event(void* drcontext, void* ptr, size_t size, bc_trace_event_header_t header) {
+    if (header.type != EV_BBL) flush_buf_part(drcontext);
+
+    dr_mutex_lock(write_lock);
+    dr_write_file(out_file, &header, sizeof(bc_trace_event_header_t));
+    dr_write_file(out_file, ptr, size);
+    dr_mutex_unlock(write_lock);
+    
 }
 
 static void on_buf_full(void* drcontext, void* buf_base, size_t size) {
 
-    dr_mutex_lock(write_lock);
-    dr_write_file(out_file, buf_base, size);
-    dr_mutex_unlock(write_lock);
+    int count = (int)(size / sizeof(bc_block_trace_t));
 
-    if (max_trace_size > 0 &&
-        (uint32_t)dr_atomic_add32_return_sum(&trace_size,
-            (int)(size / sizeof(bc_block_trace_t))) >= (uint32_t)max_trace_size) {
+    bc_trace_event_header_t header = { 0xFF, EV_BBL, count };
+    write_event(drcontext, buf_base, size, header);
 
+    if (max_trace_size > 0 && dr_atomic_add32_return_sum(&trace_size, count) >= max_trace_size) {
         if (dr_atomic_add32_return_sum(&thread_exit, 1) == 1) {
-
             dr_atomic_store32(&limit_reached, 1);
             dr_fprintf(STDERR, "Limit reached, stopping trace\n");
         }
@@ -106,24 +113,28 @@ static void event_thread_exit(void* drcontext) {
 
 static void event_module_load(void *drcontext, const module_data_t *info, char loaded) {
 
-    char buf[256];
+    char buf[512];
 
     const char* name = dr_module_preferred_name(info);
     const char* path = info->full_path;
-    size_t path_size = strlen(path) + 1;
+    size_t path_size = strlen(path);
+    size_t total_size = sizeof(bc_module_trace_t) + path_size;
 
-    bc_module_trace_t* mod = (bc_module_trace_t*)dr_global_alloc(sizeof(bc_module_trace_t) + path_size);
+    bc_module_trace_t* mod = (bc_module_trace_t*)dr_global_alloc(total_size);
 
     mod->module_id = module_count++;
     mod->start = (uintptr_t)info->start;
     mod->end = (uintptr_t)info->end;
     mod->path_size = (uint16_t)path_size;
-    strncpy(mod->path, path, path_size);
+    memcpy(mod->path, path, path_size);
 
     int l = dr_snprintf(buf, sizeof(buf),
     "Loaded module %s (#%d)\n\tStart: %llX\n\tEnd: %llX\n\tEP: %p\n\tPath: %s\n\n",
         name, mod->module_id, mod->start, mod->end, info->entry_point, mod->path
     );
+
+    bc_trace_event_header_t header = { 0xFF, EV_MODULE, 1 };
+    write_event(drcontext, mod, total_size, header);
 
     dr_global_free(mod, sizeof(bc_module_trace_t) + path_size);
     dr_write_file(log_file, buf, l);
@@ -178,7 +189,7 @@ dr_emit_flags_t event_basic_block(void *drcontext, void *tag,
     return DR_EMIT_DEFAULT;
 }
 
-static void print_exception(bc_exception_trace_t e, thread_id_t global_id) {
+static void save_exception(bc_exception_trace_t e, thread_id_t global_id) {
 
     dr_fprintf(STDERR, "Exception %X\n", e.code);
     char buf[256];
@@ -191,8 +202,9 @@ static void print_exception(bc_exception_trace_t e, thread_id_t global_id) {
         e.xsi, e.xdi, e.xbp, e.xsp);
         
     dr_write_file(log_file, buf, l);
-    
-    flush_buf_part(dr_get_current_drcontext());
+
+    bc_trace_event_header_t header = { 0xFF, EV_EXCEPTION, 1 };
+    write_event(dr_get_current_drcontext(), &e, sizeof(bc_exception_trace_t), header);
 
 }
 
@@ -211,7 +223,7 @@ static char event_exception(void* drcontext, dr_exception_t* except)
         mc->xsi, mc->xdi, mc->xbp, mc->xsp
     };
 
-    print_exception(e, full_id);
+    save_exception(e, full_id);
 
     return true;
 }
@@ -230,7 +242,7 @@ static dr_signal_action_t event_signal(void* drcontext, dr_siginfo_t* info) {
         mc->xsi, mc->xdi, mc->xbp, mc->xsp
     };
 
-    print_exception(e, full_id);
+    save_exception(e, full_id);
 
     return DR_SIGNAL_DELIVER;
 }
@@ -359,5 +371,5 @@ DR_EXPORT void dr_client_main(client_id_t id, int argc, const char* argv[])
         event_basic_block,
         NULL
     );
-    dr_register_exit_event(event_exit);
+    drmgr_register_exit_event(event_exit);
 }

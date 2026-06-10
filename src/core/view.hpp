@@ -7,7 +7,7 @@
 #include <vector>
 
 typedef struct {
-    uint32_t id;
+    BCObjectId id;
     std::string name;
 } BCTraceEntry;
 

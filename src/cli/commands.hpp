@@ -83,12 +83,11 @@ public:
 
         BCDatabase* db = sess.database.get();
         std::string name = args.main_arg;
-        auto it = db->names.find(name);
-        if (it == db->names.end()) {
+        BCObject* obj = db->store.get_by_name(name);
+        if (!obj) {
             std::cerr << "Object not found!" << std::endl;
             return 0x4;
         }
-        BCObject* obj = db->resolve_object(it->second);
         obj->dispatch_details(*sess.details_view);
 
         return 0x0;
@@ -145,16 +144,16 @@ public:
                 } else {
                     TraceStep step = db->trace.steps[offset];
                     std::visit(Overload {
-                        [&](uint32_t blk_id) {
-                            std::cout << offset << '\t' << db->resolve_object(blk_id)->name << '\n';
+                        [&](BCObjectId id) {
+                            std::cout << offset << '\t' << db->store.get(id)->name << '\n';
                         },
-                        [&](BCLoopInstance loop) {
+                        [&](BCLoopInstance li) {
                             if (TRACE_COLLAPSE_LOOP) {
-                                std::cout << offset << '\t' << db->getLoopById(loop.loop_id)->name
-                                    << " (x" << loop.iterations << ")\n"; 
+                                std::cout << offset << '\t' << db->store.get_loop(li.loop_id)->name
+                                    << " (x" << li.iterations << ")\n"; 
                             } else {
-                                for (int iter=0;iter<loop.iterations && i<n;iter++,i++) {
-                                    std::cout << offset << '\t' << db->getLoopById(loop.loop_id)->name << '\n';
+                                for (int iter=0;iter<li.iterations && i<n;iter++,i++) {
+                                    std::cout << offset << '\t' << db->store.get_loop(li.loop_id)->name << '\n';
                                 }
                             }
                         }

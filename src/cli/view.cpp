@@ -7,7 +7,7 @@ void display_object_info(const BCObject& object) {
 
     std::cout << '\n';
     std::cout << "Name: \t\t" << object.name << '\n';
-    std::cout << "ID: \t\t" << object.id << '\n';
+    std::cout << "ID: \t\t" << object.id.index() << '\n';
     std::cout << "Usage count: \t" << object.usage_count.value << '\n';
     std::cout << '\n';
 

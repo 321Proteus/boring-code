@@ -72,6 +72,10 @@ MainWindow::MainWindow(Session& sess, QWidget *parent)
     TracePanel* trace_panel = new TracePanel(ui->rightLayout, ui->TraceView);
     CodePanel* code_panel = new CodePanel(ui->leftLayout, ui->CodeView);
 
+    if (session.has("path")) {
+        loadTraceAsync(QString::fromStdString(session.get<std::string>("path")));
+    }
+
 }
 
 MainWindow::~MainWindow()
@@ -126,8 +130,8 @@ void MainWindow::onSelectionChanged(const QItemSelection& selected, const QItemS
 
             for (const QModelIndex& index : indexes) {
 
-                uint32_t id = index.data(Qt::UserRole).toUInt();
-                BCObject* object = db->resolve_object(id);
+                BCObjectId id((quint64)index.data(Qt::UserRole).toULongLong());
+                BCObject* object = db->store.get(id);
                 std::vector<BCAddr> code_addrs = object->get_code_addrs();
 
                 for (const BCAddr address : code_addrs) {
@@ -148,8 +152,8 @@ void MainWindow::onSelectionChanged(const QItemSelection& selected, const QItemS
         
     } else if (selected.size() == 1) {
 
-        uint32_t id = indexes.first().data(Qt::UserRole).toUInt();
-        BCObject* object = db->resolve_object(id);
+        BCObjectId id((quint64)indexes.first().data(Qt::UserRole).toULongLong());
+        BCObject* object = db->store.get(id);
         object->dispatch_details(*session.details_view);
     
     } else {
