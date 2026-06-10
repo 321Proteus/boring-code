@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include "tools/counter.h"
 
+#define BC_TRACE_FORMAT_VERSION 0x02;
+
 #pragma pack(push, 1)
 typedef struct {
     char magic[4];

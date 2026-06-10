@@ -14,6 +14,7 @@
 #include <unordered_set>
 #include <variant>
 #include <vector>
+#include "core/format.h"
 #include "object.hpp"
 #include "view.hpp"
 #include "overload.hpp"
@@ -306,20 +307,17 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
 
     f.seekg(0, std::ios::end);
     uint64_t size = f.tellg();
-    f.seekg(4, std::ios::beg);
+    f.seekg(0, std::ios::beg);
 
-    uint8_t version; f.read(reinterpret_cast<char*>(&version), 1);
-    uint8_t arch; f.read(reinterpret_cast<char*>(&arch), 1);
-    bool is_x64 = (arch == 1);
-    uint32_t hash; f.read(reinterpret_cast<char*>(&hash), 4);
-    BCAddr base; f.read(reinterpret_cast<char*>(&base), 8);
+    Header hdr; f.read(reinterpret_cast<char*>(&hdr), sizeof(Header));
+
 
     BCDatabase db;
-    db.is_x64 = is_x64;
-    db.base_address = base;
-    db.crc_hash = hash;
+    db.is_x64 = hdr.arch;
+    db.base_address = hdr.base_low | ((uint64_t)hdr.base_mid << 32);
+    db.crc_hash = hdr.hash;
 
-    sv.setup_job("Loading trace", (size - (uint64_t)f.tellg()) / (is_x64 ? 8 : 4));
+    sv.setup_job("Loading trace", (size - (uint64_t)f.tellg()) / sizeof (bc_block_trace_t));
 
     std::vector<char> buffer(size - f.tellg());
     f.read(buffer.data(), buffer.size());
@@ -327,23 +325,25 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
     const char* ptr = buffer.data();
     const char* end = ptr + buffer.size();
 
-    raw_data.steps.reserve(buffer.size() / (is_x64 ? 8 : 4));
+    raw_data.steps.reserve(buffer.size() / sizeof(bc_block_trace_t));
 
     int count = 0;
     BCAddr a = 0;
     uint32_t bblk_id = 1;
+
     while (ptr < end) {
 
-        BCAddr a = is_x64 ? *reinterpret_cast<const uint64_t*>(ptr) : *reinterpret_cast<const uint32_t*>(ptr);
-        ptr += (is_x64 ? 8 : 4);
+        bc_block_trace_t block = *reinterpret_cast<const bc_block_trace_t*>(ptr);
+        BCAddr a = block.pc_low | ((BCAddr)block.pc_mid >> 16);
+        ptr += sizeof(bc_block_trace_t);
         auto res = db.insert<BCBasicBlock>(bblk_id, a);
         raw_data.push_block(res.id);
         if (res.created) bblk_id++;
         sv.update_job_progress(count++);
     }
 
-    printf("Architecture: %s \nHash: %X \nBase: %016llX\n", (is_x64 ? "x64" : "x86"), hash, base);
-    printf("Loaded %zu basic blocks an %zu trace steps\n", db.basic_blocks.size(), raw_data.size());
+    printf("Architecture: %s \nHash: %X \nBase: %zX\n", (db.is_x64 ? "x64" : "x86"), db.crc_hash, db.base_address);
+    printf("Loaded %zu basic blocks and %zu trace steps\n", db.basic_blocks.size(), raw_data.size());
 
     BCTrace t1 = build_chains(db, raw_data, sv, true);
     BCTrace t3 = deloop(db, t1, sv);

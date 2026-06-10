@@ -21,10 +21,6 @@ void record_x64(void* drcontext, instrlist_t* bb, instr_t* first, app_pc pc,
         opnd_create_reg(reg2), OPND_CREATE_INTPTR(pc)
     ));
 
-    instrlist_meta_preinsert(bb, first, INSTR_CREATE_shr(drcontext, 
-        opnd_create_reg(reg2), OPND_CREATE_INT8(16)
-    ));
-
     instrlist_meta_preinsert(bb, first, INSTR_CREATE_or(drcontext,
         opnd_create_reg(reg2), opnd_create_reg(reg1)
     ));

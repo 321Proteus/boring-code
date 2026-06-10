@@ -115,8 +115,8 @@ static void event_module_load(void *drcontext, const module_data_t *info, char l
     bc_module_trace_t* mod = (bc_module_trace_t*)dr_global_alloc(sizeof(bc_module_trace_t) + path_size);
 
     mod->module_id = module_count++;
-    mod->start = (uint64_t)info->start;
-    mod->end = (uint64_t)info->end;
+    mod->start = (uintptr_t)info->start;
+    mod->end = (uintptr_t)info->end;
     mod->path_size = (uint16_t)path_size;
     strncpy(mod->path, path, path_size);
 
@@ -223,8 +223,8 @@ static dr_signal_action_t event_signal(void* drcontext, dr_siginfo_t* info) {
     dr_mcontext_t* mc = info->mcontext;
 
     bc_exception_trace_t e = {
+        (uintptr_t)mc->pc,
         info->sig,
-        (uint64_t)mc->pc,
         virtual_id,
         mc->xax, mc->xbx, mc->xcx, mc->xdx,
         mc->xsi, mc->xdi, mc->xbp, mc->xsp
