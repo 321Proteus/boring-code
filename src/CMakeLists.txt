@@ -25,10 +25,12 @@ set(CORE_SOURCES
 
     core/view.hpp
     core/view.cpp
+    
+    data/provider.hpp
+    data/provider.cpp
 )
 
 set(APP_COMMON_SOURCES
-    data/provider.hpp
     data/session.hpp
 )
 
@@ -40,12 +42,12 @@ set(APP_CLI_SOURCES
     cli/view.hpp
 )
 
+set(APP_PROVIDER_DIRECT providers/direct.hpp providers/direct.cpp)
+
 if(MSVC)
     set(CMAKE_CXX_FLAGS_RELEASE "-O2")
-    set(APP_PROVIDER_DIRECT providers/direct.hpp providers/direct_win.cpp)
 else()
     set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-    set(APP_PROVIDER_DIRECT providers/direct.hpp providers/direct_unix.cpp)
 endif()
 
 add_library(BoringCodeCore STATIC ${CORE_SOURCES})
