@@ -44,12 +44,6 @@ set(APP_CLI_SOURCES
 
 set(APP_PROVIDER_DIRECT providers/direct.hpp providers/direct.cpp)
 
-if(MSVC)
-    set(CMAKE_CXX_FLAGS_RELEASE "-O2")
-else()
-    set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-endif()
-
 add_library(BoringCodeCore STATIC ${CORE_SOURCES})
 add_library(BoringCodeAppCommon INTERFACE)
 add_library(BoringCodeDirect STATIC ${APP_PROVIDER_DIRECT})
