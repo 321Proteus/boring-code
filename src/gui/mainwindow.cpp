@@ -136,7 +136,7 @@ void MainWindow::onSelectionChanged(const QItemSelection& selected, const QItemS
 
                 for (const BCAddr address : code_addrs) {
 
-                    std::vector<BCInstruction> bb = prov->get_bb(db->base_address, address);
+                    std::vector<BCInstruction> bb = prov->get_bb(0, address);
 
                     for (const BCInstruction& in : bb) {
                         QListWidgetItem* el = new QListWidgetItem();

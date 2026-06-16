@@ -290,7 +290,6 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
     Header hdr; f.read(reinterpret_cast<char*>(&hdr), sizeof(Header));
 
     BCDatabase db;
-    db.base_address = hdr.base_low | ((uint64_t)hdr.base_mid << 32);
     db.crc_hash = hdr.hash;
 
     uint64_t total_size = fsize - (uint64_t)f.tellg();
@@ -305,6 +304,7 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
     sv.setup_job("Loading trace", trace_length);
 
     int prog = 0;
+    int full_chunks = 0;
 
     while (ptr < end) {
 
@@ -313,7 +313,8 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
 
         switch (eh.type) {
             case EV_BBL: {
-                printf("[BBL] x%d\n\n", eh.count);
+                if (eh.count != hdr.chunk_size) printf("[BBL] x%d (partial flush)\n\n", eh.count);
+                else full_chunks++;
                 while (eh.count--) {
                     const bc_block_trace_t* bb = reinterpret_cast<const bc_block_trace_t*>(ptr);
                     BCAddr addr = (BCAddr)bb->pc_low | ((BCAddr)bb->pc_mid << 32);
@@ -342,9 +343,13 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
             }
         }
 
+        if (eh.type != EV_BBL && full_chunks > 0) {
+            printf("[BBL] x%d (full flush)\n\n", full_chunks*hdr.chunk_size);
+        }
+
     }
 
-    printf("Architecture: %s \nHash: %X \nBase: %zX\n", (hdr.arch ? "x64" : "x86"), db.crc_hash, db.base_address);
+    printf("Architecture: %s \nHash: %X \n", (hdr.arch ? "x64" : "x86"), db.crc_hash);
     printf("Loaded %zu basic blocks and %zu trace steps\n", db.store.basic_blocks().size(), raw_data.size());
 
     BCTrace t1 = build_chains(db, raw_data, sv, true);

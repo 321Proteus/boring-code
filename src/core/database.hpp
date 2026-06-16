@@ -95,8 +95,6 @@ public:
     
     std::unordered_map<BCObjectId, std::map<BCObjectId, int>> next_map;
     std::unordered_map<BCObjectId, std::map<BCObjectId, int>> prev_map;
-
-    BCAddr base_address;
     uint32_t crc_hash;
 
     void apply_prevs_nexts(BCStatusViewModel& sv);

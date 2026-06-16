@@ -58,6 +58,8 @@ static Header create_header(const char* path) {
     hdr.arch = x64;
     hdr.hash = (path ? compute_crc32(path) : 0);
     hdr.version = BC_TRACE_FORMAT_VERSION;
+    hdr.chunk_size = TRACE_CHUNK_SIZE;
+    hdr.reserved = 0xFFFFFFFF;
     return hdr;
 }
 

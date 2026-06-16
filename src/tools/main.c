@@ -325,28 +325,21 @@ DR_EXPORT void dr_client_main(client_id_t id, int argc, const char* argv[])
         dr_write_file(log_file, buf, l);
 
         hdr = create_header(path);
-        hdr.base_low = (uint32_t)(uintptr_t)main_mod->start;
-#ifdef X86_64
-        hdr.base_mid = (uint16_t)((uintptr_t)main_mod->start >> 32);
-#else
-        hdr.base_mid = 0;
-#endif
+
         main_mod_start = main_mod->start;
         main_mod_end = main_mod->end;
 
-        if (!custom_name) sprintf(fname, "bcfunctions_%X.bin", hdr.hash);
+        if (!custom_name) sprintf(fname, "bctrace_%X.bin", hdr.hash);
 
     } else {
 
         hdr = create_header(NULL);
-        hdr.base_low = 0;
-        hdr.base_mid = 0;
 
         const char* warning = "Warning: Couldn't find the main module, which probably indicates a broken or obfuscated binary. \
-            Image base and CRC32 have been set to their default values.";
+            The checksum has been set to the default value.";
         dr_write_file(log_file, warning, strlen(warning));
 
-        if (!custom_name) sprintf(fname, "bcfunctions.bin");
+        if (!custom_name) sprintf(fname, "bctrace.bin");
 
     }
 

@@ -11,8 +11,8 @@ typedef struct {
     uint8_t version;
     uint8_t arch;
     uint32_t hash;
-    uint32_t base_low;
-    uint16_t base_mid;
+    uint16_t chunk_size;
+    uint32_t reserved;
 } Header;
 #pragma pack(pop)
 
