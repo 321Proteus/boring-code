@@ -3,7 +3,6 @@
 
 #include "view.hpp"
 #include "worker.hpp"
-#include "core/loader.hpp"
 #include "data/session.hpp"
 #include <QMainWindow>
 #include <memory>
@@ -22,7 +21,6 @@ public:
     MainWindow(Session& sess, QWidget *parent = nullptr);
     ~MainWindow();
     void loadTraceAsync(QString path);
-    void loadBinary(QString path, BCFileType type);
 
 private:
     void setupShortcuts();

@@ -4,6 +4,7 @@
 #include "core/loader.hpp"
 #include "data/provider.hpp"
 #include "core/view.hpp"
+#include "providers/direct.hpp"
 #include <map>
 #include <memory>
 #include <string>
@@ -20,7 +21,7 @@ public:
     BCDetailsViewModel* details_view = nullptr;
     BCStatusViewModel* status_view = nullptr;
 
-    std::unique_ptr<BCCodeProvider> code_provider;
+    std::unique_ptr<BCCodeProviderRegistry> provider_registry;
 
     uint32_t checksum;
 
@@ -52,10 +53,13 @@ public:
     }
 
     void load_trace(const std::string& path, BCStatusViewModel* model = nullptr) {
-        database = std::make_unique<BCDatabase>(
-            load_database(path, (model ? *model : *status_view))
-        );
+
+        BCStatusViewModel& sv = model ? *model : *status_view;
+
+        database = std::make_unique<BCDatabase>(load_database(path, sv));
         this->checksum = database->crc_hash;
+        provider_registry = std::make_unique<BCCodeProviderRegistry>(resolve_modules(*database, sv));
+        
     }
 
 };

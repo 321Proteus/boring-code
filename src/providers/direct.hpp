@@ -2,6 +2,7 @@
 
 #include <capstone/capstone.h>
 #include "core/address.hpp"
+#include "core/view.hpp"
 #include "data/provider.hpp"
 #include <algorithm>
 #include <cstddef>
@@ -100,8 +101,8 @@ private:
 
 public:
 
-    DirectCodeProvider(std::shared_ptr<MappedFile> file)
-        : file(std::move(file)) {}
+    DirectCodeProvider(std::shared_ptr<MappedFile> file, BCAddr start, BCAddr end)
+        : BCCodeProvider(start, end), file(std::move(file)) {}
 
     void parse_pe() {
 
@@ -252,14 +253,16 @@ public:
 
     }
 
-    std::vector<BCInstruction> get_bb(BCAddr runtime_base, BCAddr va) override {
+    std::vector<BCInstruction> get_bb(BCAddr va) override {
 
         std::vector<BCInstruction> v;
 
-        if (va < runtime_base) return v;
+        if (va < start) return v;
 
-        ptrdiff_t rva = va - runtime_base;
+        ptrdiff_t rva = va - start;
         ptrdiff_t offset = rva_to_file_offset(rva);
+
+        printf("VA 0x%lX, RVA 0x%lX, offset 0x%lX\n", va, rva, offset);
         if (offset < 0 || static_cast<size_t>(offset) > file->size()) return v;
 
         const uint8_t* ptr = file->data() + offset;
@@ -304,3 +307,5 @@ public:
     }
 
 };
+
+BCCodeProviderRegistry resolve_modules(BCDatabase& db, BCStatusViewModel& sv);

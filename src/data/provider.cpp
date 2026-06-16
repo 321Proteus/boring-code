@@ -31,7 +31,4 @@ void BCCodeProviderRegistry::register_provider(BCModule mod, std::unique_ptr<BCC
     });
     Entry e { mod.start, mod.end, std::move(prov) };
     mapping.insert(pos, std::move(e));
-    
-    // We assume that the module just loaded will be executed immediately
-    last_index = std::distance(mapping.begin(), pos);
 }

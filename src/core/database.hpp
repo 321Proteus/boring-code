@@ -26,17 +26,21 @@ public:
     BCBlock*            get_block(BCObjectId id) const;
     BCBasicBlock*       get_bbl(BCObjectId id) const;
     BCLoop*             get_loop(BCObjectId id) const;
+    BCModule*           get_module(BCObjectId id) const;
 
     BCBlock*            get_block(uint32_t index) const;
     BCBasicBlock*       get_bbl(uint32_t index) const;
     BCLoop*             get_loop(uint32_t index) const;
+    BCModule*           get_module(uint32_t index) const;
 
     BCObject*           get(BCObjectId id) const;
-    BCBasicBlock*       get_by_addr(BCAddr address) const;
+    BCBasicBlock*       get_bb_by_addr(BCAddr address) const;
+    BCModule*           get_module_by_addr(BCAddr address) const;
     BCObject*           get_by_name(const std::string& name) const;
 
     BCInsertionResult   insert_basic_block(BCAddr addr);
     BCInsertionResult   insert_block(const std::vector<BCObject*> members);
+    BCInsertionResult   insert_module(uint32_t id, BCAddr start, BCAddr end, const std::string& path);
 
     template <typename Iterator>
     BCInsertionResult insert_loop(Iterator begin, Iterator end) {
@@ -71,19 +75,22 @@ public:
     auto const& basic_blocks() const { return basic_blocks_; };
     auto const& blocks() const { return blocks_; };
     auto const& loops() const { return loops_; };
+    auto const& modules() const { return modules_; };
 
 private:
-    std::vector<std::unique_ptr<BCBasicBlock>> basic_blocks_;
-    std::vector<std::unique_ptr<BCBlock>>      blocks_;
-    std::vector<std::unique_ptr<BCLoop>>       loops_;
+    std::vector<std::unique_ptr<BCBasicBlock>>  basic_blocks_;
+    std::vector<std::unique_ptr<BCBlock>>       blocks_;
+    std::vector<std::unique_ptr<BCLoop>>        loops_;
+    std::vector<std::unique_ptr<BCModule>>      modules_;
 
-    std::unordered_map<BCAddr, uint32_t>                        basic_blocks_addrs_;
-    std::unordered_map<std::string, BCObjectId>                 names_;
-    std::unordered_map<uint64_t, std::vector<uint32_t>>         loop_hashes_;
+    std::unordered_map<BCAddr, uint32_t>                basic_blocks_addrs_;
+    std::unordered_map<std::string, BCObjectId>         names_;
+    std::unordered_map<uint64_t, std::vector<uint32_t>> loop_hashes_;
 
     uint32_t next_bbl_id_   = 0;
     uint32_t next_block_id_ = 0;
     uint32_t next_loop_id_  = 0;
+    // For modules, the counter is the internal on bc_module_trace_t.id provided by the tracer
 };
 
 class BCDatabase {

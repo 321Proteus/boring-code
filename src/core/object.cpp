@@ -13,7 +13,7 @@ std::vector<BCAddr> BCBasicBlock::get_code_addrs() const {
 }
 
 std::vector<BCAddr> BCBlock::get_code_addrs() const {
-    std::vector<uint64_t> addrs;
+    std::vector<BCAddr> addrs;
     for (BCObject* m : this->members) {
         auto member_addrs = m->get_code_addrs();
         addrs.insert(addrs.end(), member_addrs.begin(), member_addrs.end());

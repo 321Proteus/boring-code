@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-enum class BCObjectType : uint8_t { BasicBlock, Block, Loop };
+enum class BCObjectType : uint8_t { BasicBlock, Block, Loop, Module };
 
 struct BCObjectId {
     uint64_t raw = 0;
@@ -111,4 +111,14 @@ struct BCLoopInstance {
     uint32_t loop_id;
     uint32_t iterations;
     BCObjectId full_id() const { return BCObjectId { loop_id, BCObjectType::Loop }; }
+};
+
+struct BCModule {
+    BCAddr start;
+    BCAddr end;
+    std::string path;
+
+    BCModule(BCAddr start, BCAddr end, const std::string& path)
+        : start(start), end(end), path(path) {} 
+
 };

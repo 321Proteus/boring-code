@@ -66,15 +66,21 @@ BCCodeProviderRegistry resolve_modules(BCDatabase& db, BCStatusViewModel& sv) {
     int mr_progress = 0;
 
     for (const auto& mod : db.store.modules()) {
-
-        if (detect_type(mod->path) == BCFileType::UNKNOWN) {
+        BCFileType type = detect_type(mod->path);
+        if (type == BCFileType::UNKNOWN) {
             printf("Failed to register module %s (not a module)\n", mod->path.c_str());
             continue;
         }
 
         try {
             std::shared_ptr<MappedFile> file = std::make_shared<MappedFile>(mod->path);
-            std::unique_ptr<BCCodeProvider> provider = std::make_unique<DirectCodeProvider>(file);
+            std::unique_ptr<DirectCodeProvider> provider = std::make_unique<DirectCodeProvider>(file, mod->start, mod->end);
+
+            if (type == BCFileType::PE)         provider->parse_pe();
+            else if (type == BCFileType::ELF)   provider->parse_elf();
+
+            provider->init_cs_handler();
+
             registry.register_provider(*mod, std::move(provider));
             printf("Successfully registered module %s\n", mod->path.c_str());
 

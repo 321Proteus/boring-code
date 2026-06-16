@@ -3,6 +3,7 @@
 #include "loader.hpp"
 #include <algorithm>
 #include <cstdint>
+#include <memory>
 #include <unordered_map>
 #include <utility>
 #include <variant>
@@ -39,6 +40,15 @@ BCLoop* BCObjectStore::get_loop(uint32_t index) const {
     return (index < loops_.size() ? loops_[index].get() : nullptr);
 }
 
+BCModule* BCObjectStore::get_module(BCObjectId id) const {
+    uint32_t i = id.index();
+    return (i < modules_.size() ? modules_[i].get() : nullptr);
+}
+
+BCModule* BCObjectStore::get_module(uint32_t index) const { 
+    return (index < modules_.size() ? modules_[index].get() : nullptr);
+}
+
 BCObject* BCObjectStore::get(BCObjectId id) const {
     switch (id.type()) {
         case BCObjectType::BasicBlock:
@@ -57,7 +67,7 @@ BCObject* BCObjectStore::get_by_name(const std::string& name) const {
     return (it != names_.end() ? get(it->second) : nullptr);
 }
 
-BCBasicBlock* BCObjectStore::get_by_addr(BCAddr address) const {
+BCBasicBlock* BCObjectStore::get_bb_by_addr(BCAddr address) const {
     auto it = basic_blocks_addrs_.find(address);
     return (it != basic_blocks_addrs_.end() ? basic_blocks_.at(it->second).get() : nullptr );
 }
@@ -86,6 +96,19 @@ BCInsertionResult BCObjectStore::insert_block(std::vector<BCObject*> members) {
     names_[obj.get()->name] = id;
     blocks_.push_back(std::move(obj));
     
+    return { id, true };
+
+}
+
+BCInsertionResult BCObjectStore::insert_module(uint32_t index, BCAddr start, BCAddr end, const std::string& path) {
+
+    BCObjectId id = { index, BCObjectType::Module };
+    if (index < modules_.size()) return { id, false };
+
+    std::unique_ptr<BCModule> obj = std::make_unique<BCModule>(start, end, path);
+    names_[path] = id;
+    modules_.push_back(std::move(obj));
+
     return { id, true };
 
 }

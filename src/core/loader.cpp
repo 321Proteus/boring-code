@@ -330,16 +330,17 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
                 const bc_module_trace_t* mod = reinterpret_cast<const bc_module_trace_t*>(ptr);
                 
                 printf("[MODULE #%d]\nStart: %lX\nEnd: %lX\n", mod->module_id, mod->start, mod->end);
-                std::string path(mod->path, mod->path_size);
+                std::string path(mod->path);
                 printf("Path: %s\n\n", path.c_str());
 
-                int total_size = sizeof(bc_module_trace_t) + mod->path_size;
+                BCInsertionResult r = db.store.insert_module(mod->module_id, mod->start, mod->end, mod->path);
+
+                int total_size = sizeof(bc_module_trace_t) + mod->path_size + 1;
                 ptr += total_size;
-                break;
-
                 prog += (total_size / sizeof(bc_block_trace_t));
-
                 sv.update_job_progress(prog);
+
+                break;
             }
         }
 
