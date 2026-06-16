@@ -113,12 +113,10 @@ static void event_thread_exit(void* drcontext) {
 
 static void event_module_load(void *drcontext, const module_data_t *info, char loaded) {
 
-    char buf[512];
-
     const char* name = dr_module_preferred_name(info);
     const char* path = info->full_path;
     size_t path_size = strlen(path);
-    size_t total_size = sizeof(bc_module_trace_t) + path_size;
+    size_t total_size = sizeof(bc_module_trace_t) + path_size + 1;
 
     bc_module_trace_t* mod = (bc_module_trace_t*)dr_global_alloc(total_size);
 
@@ -126,15 +124,16 @@ static void event_module_load(void *drcontext, const module_data_t *info, char l
     mod->start = (uintptr_t)info->start;
     mod->end = (uintptr_t)info->end;
     mod->path_size = (uint16_t)path_size;
-    memcpy(mod->path, path, path_size);
-
-    int l = dr_snprintf(buf, sizeof(buf),
-    "Loaded module %s (#%d)\n\tStart: %llX\n\tEnd: %llX\n\tEP: %p\n\tPath: %s\n\n",
-        name, mod->module_id, mod->start, mod->end, info->entry_point, mod->path
-    );
+    memcpy(mod->path, path, path_size + 1);
 
     bc_trace_event_header_t header = { 0xFF, EV_MODULE, 1 };
     write_event(drcontext, mod, total_size, header);
+
+    char buf[512];
+    int l = dr_snprintf(buf, sizeof(buf),
+    "Loaded module %s (#%d)\n\tStart: %llX\n\tEnd: %llX\n\tEP: %p\n\tPath: %s\n\n",
+        name, mod->module_id, mod->start, mod->end, info->entry_point, path
+    );
 
     dr_global_free(mod, sizeof(bc_module_trace_t) + path_size);
     dr_write_file(log_file, buf, l);
