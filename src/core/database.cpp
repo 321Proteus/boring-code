@@ -16,14 +16,27 @@ BCBasicBlock* BCObjectStore::get_bbl(BCObjectId id) const {
     return (i < basic_blocks_.size() ? basic_blocks_[i].get() : nullptr);
 }
 
+BCBasicBlock* BCObjectStore::get_bbl(uint32_t index) const {
+    return (index < basic_blocks_.size() ? basic_blocks_[index].get() : nullptr);
+}
+
 BCBlock* BCObjectStore::get_block(BCObjectId id) const {
     uint32_t i = id.index();
     return (i < blocks_.size() ? blocks_[i].get() : nullptr);
 }
 
+BCBlock* BCObjectStore::get_block(uint32_t index) const {
+    return (index < blocks_.size() ? blocks_[index].get() : nullptr);
+}
+
+
 BCLoop* BCObjectStore::get_loop(BCObjectId id) const {
     uint32_t i = id.index();
     return (i < loops_.size() ? loops_[i].get() : nullptr);
+}
+
+BCLoop* BCObjectStore::get_loop(uint32_t index) const {
+    return (index < loops_.size() ? loops_[index].get() : nullptr);
 }
 
 BCObject* BCObjectStore::get(BCObjectId id) const {
@@ -133,7 +146,7 @@ void BCDatabase::apply_prevs_nexts(BCStatusViewModel& sv) {
 }
 
 void BCDatabase::apply_trace(const BCTrace& trace) {
-    this->trace = trace;
+    this->trace = std::move(trace);
 }
 
 void BCDatabase::find_hot_cold_blocks(BCStatusViewModel& sv) {
@@ -149,7 +162,7 @@ void BCDatabase::find_hot_cold_blocks(BCStatusViewModel& sv) {
                 trace_freqs[blk_id]++;
             },
             [&](BCLoopInstance const& li) {
-                trace_freqs[li.loop_id] += li.iterations;
+                trace_freqs[li.full_id()] += li.iterations;
                 // for (const BCObject* member : loops[li.loop_id]->body) {
                 //     trace_freqs[member->id] += li.iterations;
                 // }

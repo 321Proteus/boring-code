@@ -27,6 +27,10 @@ public:
     BCBasicBlock*       get_bbl(BCObjectId id) const;
     BCLoop*             get_loop(BCObjectId id) const;
 
+    BCBlock*            get_block(uint32_t index) const;
+    BCBasicBlock*       get_bbl(uint32_t index) const;
+    BCLoop*             get_loop(uint32_t index) const;
+
     BCObject*           get(BCObjectId id) const;
     BCBasicBlock*       get_by_addr(BCAddr address) const;
     BCObject*           get_by_name(const std::string& name) const;

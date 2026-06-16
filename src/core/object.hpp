@@ -108,6 +108,7 @@ public:
 };
 
 struct BCLoopInstance {
-    BCObjectId loop_id;
+    uint32_t loop_id;
     uint32_t iterations;
+    BCObjectId full_id() const { return BCObjectId { loop_id, BCObjectType::Loop }; }
 };

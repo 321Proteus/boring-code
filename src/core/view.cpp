@@ -20,7 +20,7 @@ std::shared_ptr<std::vector<BCTraceEntry>> BCTraceViewModel::precompute_trace(co
             },
             [&](BCLoopInstance li) {
                 BCLoop* loop = db.store.get_loop(li.loop_id);
-                trace_list->push_back({ li.loop_id, loop->name + " (x" + std::to_string(li.iterations) + ")" });
+                trace_list->push_back({ li.full_id(), loop->name + " (x" + std::to_string(li.iterations) + ")" });
             }
         }, step);
         sv.update_job_progress(i);

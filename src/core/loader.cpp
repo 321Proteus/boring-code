@@ -52,7 +52,7 @@ std::vector<BCObjectId> flatten(const BCTrace& t, bool blocks_only = false) {
                 flat.push_back(*p);
             } else {
                 auto& li = std::get<BCLoopInstance>(step);
-                flat.push_back(li.loop_id);
+                flat.push_back(li.full_id());
             }
         }
     }
@@ -259,8 +259,8 @@ BCTrace deloop(BCDatabase& db, const BCTrace& src, BCStatusViewModel& sv) {
                 if (id->type() == BCObjectType::Loop) {
                     while (id->index() < loop_id && prev_idx < t.steps.size()) {
                         if (auto* li = std::get_if<BCLoopInstance>(&t.steps[prev_idx])) {
-                            if (li->loop_id == *id) {
-                                step = BCLoopInstance{ *id, li->iterations };
+                            if (li->full_id() == *id) {
+                                step = BCLoopInstance{ id->index(), li->iterations };
                                 prev_idx++;
                                 break;
                             }
