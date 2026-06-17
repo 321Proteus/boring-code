@@ -28,8 +28,8 @@ typedef struct {
     uint64_t start;
     uint64_t end;
     uint16_t module_id;
-    uint16_t path_size;
-    char path[];
+    uint16_t strings_size;
+    char strings[];
 } bc_module_trace_t;
 
 // #pragma pack(push, 1)

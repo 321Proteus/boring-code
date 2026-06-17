@@ -117,8 +117,9 @@ struct BCModule {
     BCAddr start;
     BCAddr end;
     std::string path;
+    std::string name;
 
-    BCModule(BCAddr start, BCAddr end, const std::string& path)
-        : start(start), end(end), path(path) {} 
+    BCModule(BCAddr start, BCAddr end, const std::string& name, const std::string& path)
+        : name(name), start(start), end(end), path(path) {} 
 
 };

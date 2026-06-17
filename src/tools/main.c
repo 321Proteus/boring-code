@@ -41,13 +41,15 @@ static void flush_buf_part(void* drcontext) {
     void* base = drx_buf_get_buffer_base(drcontext, trace_buf);
     void* ptr = drx_buf_get_buffer_ptr(drcontext, trace_buf);
     size_t remaining = (byte*)ptr - (byte*)base;
-    size_t rem_count = (int)(remaining / sizeof(bc_block_trace_t));
-    dr_printf("Flushing %d (%td) buffer entries\n", rem_count, remaining);
 
-    if (remaining > 0) {
-        bc_trace_event_header_t part_header = { 0xFF, EV_BBL, rem_count };
-        write_event(drcontext, base, remaining, part_header);
-    }
+    if (!remaining) return;
+
+    size_t rem_count = (int)(remaining / sizeof(bc_block_trace_t));
+    dr_printf("Flushing %d buffer entries\n", rem_count);
+
+    bc_trace_event_header_t part_header = { 0xFF, EV_BBL, rem_count };
+    write_event(drcontext, base, remaining, part_header);
+
 }
 
 static void write_event(void* drcontext, void* ptr, size_t size, bc_trace_event_header_t header) {
@@ -115,16 +117,18 @@ static void event_module_load(void *drcontext, const module_data_t *info, char l
 
     const char* name = dr_module_preferred_name(info);
     const char* path = info->full_path;
-    size_t path_size = strlen(path);
-    size_t total_size = sizeof(bc_module_trace_t) + path_size + 1;
+    size_t name_size = strlen(name) + 1;
+    size_t path_size = strlen(path) + 1;
+    size_t total_size = offsetof(bc_module_trace_t, strings) + name_size + path_size;
 
     bc_module_trace_t* mod = (bc_module_trace_t*)dr_global_alloc(total_size);
 
     mod->module_id = module_count++;
     mod->start = (uintptr_t)info->start;
     mod->end = (uintptr_t)info->end;
-    mod->path_size = (uint16_t)path_size;
-    memcpy(mod->path, path, path_size + 1);
+    mod->strings_size = name_size + path_size;
+    memcpy(mod->strings, name, name_size);
+    memcpy(mod->strings + name_size, path, path_size);
 
     bc_trace_event_header_t header = { 0xFF, EV_MODULE, 1 };
     write_event(drcontext, mod, total_size, header);
@@ -135,7 +139,7 @@ static void event_module_load(void *drcontext, const module_data_t *info, char l
         name, mod->module_id, mod->start, mod->end, info->entry_point, path
     );
 
-    dr_global_free(mod, sizeof(bc_module_trace_t) + path_size);
+    dr_global_free(mod, total_size);
     dr_write_file(log_file, buf, l);
 
 }

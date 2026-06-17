@@ -72,6 +72,36 @@ BCBasicBlock* BCObjectStore::get_bb_by_addr(BCAddr address) const {
     return (it != basic_blocks_addrs_.end() ? basic_blocks_.at(it->second).get() : nullptr );
 }
 
+BCModule* BCObjectStore::get_module_by_addr(BCAddr address) const {
+
+    // printf("Request for BB 0x%lX at module mapping: \n", address);
+    // for (auto const& mod : modules_) {
+        // printf("%s: \t\t0x%lX-0x%lX\n", mod->name.c_str(), mod->start, mod->end);
+    // }
+
+    auto it = std::upper_bound(
+        modules_.begin(), modules_.end(), address,
+        [](BCAddr addr, const std::unique_ptr<BCModule>& mod) {
+            return addr < mod->start;
+    });
+
+    if (it == modules_.begin()) {
+        // printf("Not found\n");
+        return nullptr;
+    } else {
+        // printf("Found: \t\t%s\n", it->get()->name.c_str());
+    }
+
+    it--;
+    if (address >= it->get()->start && address < it->get()->end) {
+        // printf("Returning: \t\t%s\n", it->get()->name.c_str());
+        return it->get();
+    }
+    // printf("\n");
+
+    return nullptr;
+}
+
 BCInsertionResult BCObjectStore::insert_basic_block(BCAddr address) {
 
     auto it = basic_blocks_addrs_.find(address);
@@ -100,14 +130,22 @@ BCInsertionResult BCObjectStore::insert_block(std::vector<BCObject*> members) {
 
 }
 
-BCInsertionResult BCObjectStore::insert_module(uint32_t index, BCAddr start, BCAddr end, const std::string& path) {
+BCInsertionResult BCObjectStore::insert_module(uint32_t index, BCAddr start, BCAddr end,
+    const std::string& name, const std::string& path) {
 
     BCObjectId id = { index, BCObjectType::Module };
     if (index < modules_.size()) return { id, false };
 
-    std::unique_ptr<BCModule> obj = std::make_unique<BCModule>(start, end, path);
-    names_[path] = id;
-    modules_.push_back(std::move(obj));
+    std::unique_ptr<BCModule> obj = std::make_unique<BCModule>(start, end, name, path);
+    
+    auto pos = std::lower_bound(
+    modules_.begin(), modules_.end(), start,
+        [](const auto& mod, BCAddr addr) {
+            return mod->start < addr;
+    });
+
+    names_[name] = id;
+    modules_.insert(pos, std::move(obj));
 
     return { id, true };
 

@@ -40,7 +40,7 @@ public:
 
     BCInsertionResult   insert_basic_block(BCAddr addr);
     BCInsertionResult   insert_block(const std::vector<BCObject*> members);
-    BCInsertionResult   insert_module(uint32_t id, BCAddr start, BCAddr end, const std::string& path);
+    BCInsertionResult   insert_module(uint32_t id, BCAddr start, BCAddr end, const std::string& name, const std::string& path);
 
     template <typename Iterator>
     BCInsertionResult insert_loop(Iterator begin, Iterator end) {
