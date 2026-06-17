@@ -146,7 +146,12 @@ BCTrace build_chains(BCDatabase& db, const BCTrace& input, BCStatusViewModel& sv
         if (targets.size() == 1) {
             BCObjectId dst = targets.begin()->first;
             if (src == dst) continue;
-            if (db.prev_map[dst].size() == 1) glue[src] = dst;
+            if (db.prev_map[dst].size() == 1) {
+                auto src_bbl = db.store.get(src)->get_code_addrs().front();
+                auto dst_bbl = db.store.get(dst)->get_code_addrs().front();
+                if (db.store.get_module_by_addr(src_bbl) == db.store.get_module_by_addr(dst_bbl))
+                    glue[src] = dst;
+            }
         }
         sv.update_job_progress(cs_progress++);
     }
@@ -313,7 +318,7 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
 
         switch (eh.type) {
             case EV_BBL: {
-                if (eh.count != hdr.chunk_size) printf("[BBL] x%d (partial flush)\n\n", eh.count);
+                if (eh.count && eh.count != hdr.chunk_size) printf("[BBL] x%d (partial flush)\n\n", eh.count);
                 else full_chunks++;
                 while (eh.count--) {
                     const bc_block_trace_t* bb = reinterpret_cast<const bc_block_trace_t*>(ptr);
@@ -328,27 +333,39 @@ BCDatabase load_database(const std::string& path, BCStatusViewModel& sv) {
             }
             case EV_MODULE: {
                 const bc_module_trace_t* mod = reinterpret_cast<const bc_module_trace_t*>(ptr);
-                
-                printf("[MODULE #%d]\nStart: %lX\nEnd: %lX\n", mod->module_id, mod->start, mod->end);
-                std::string path(mod->path);
+                ptr += offsetof(bc_module_trace_t, strings);
+
+                std::string name = ptr;
+                ptr += name.size() + 1;
+
+                std::string path = ptr;
+                ptr += path.size() + 1;
+
+                printf("[MODULE #%d] Name: %s\nStart: %lX\nEnd: %lX\n", mod->module_id, name.c_str(), mod->start, mod->end);
                 printf("Path: %s\n\n", path.c_str());
 
-                BCInsertionResult r = db.store.insert_module(mod->module_id, mod->start, mod->end, mod->path);
+                BCInsertionResult r = db.store.insert_module(mod->module_id, mod->start, mod->end, name, path);
 
-                int total_size = sizeof(bc_module_trace_t) + mod->path_size + 1;
-                ptr += total_size;
+                int total_size = sizeof(bc_module_trace_t) + mod->strings_size;
+
                 prog += (total_size / sizeof(bc_block_trace_t));
                 sv.update_job_progress(prog);
 
                 break;
             }
+            default: {
+                printf("Unrecognized event type %X (0x%tx)\n", eh.type, ptr - buffer.data() + 0x10);
+            }
         }
 
         if (eh.type != EV_BBL && full_chunks > 0) {
-            printf("[BBL] x%d (full flush)\n\n", full_chunks*hdr.chunk_size);
+            printf("[BBL] x%d (%dx full flush)\n\n", full_chunks*hdr.chunk_size, full_chunks);
+            full_chunks = 0;
         }
 
     }
+
+    raw_data.steps.shrink_to_fit();
 
     printf("Architecture: %s \nHash: %X \n", (hdr.arch ? "x64" : "x86"), db.crc_hash);
     printf("Loaded %zu basic blocks and %zu trace steps\n", db.store.basic_blocks().size(), raw_data.size());
