@@ -9,6 +9,7 @@
 typedef struct {
     BCObjectId id;
     std::string name;
+    std::string module;
 } BCTraceEntry;
 
 typedef struct {

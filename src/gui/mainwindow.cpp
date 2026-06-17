@@ -32,7 +32,9 @@ MainWindow::MainWindow(Session& sess, QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    
     ui->TraceView->setSelectionMode(QAbstractItemView::ContiguousSelection);
+    ui->TraceView->setSelectionBehavior(QAbstractItemView::SelectRows);
 
     ui->CodeView->setSelectionMode(QAbstractItemView::ExtendedSelection);
     ui->CodeView->setSelectionBehavior(QAbstractItemView::SelectItems);
@@ -113,18 +115,18 @@ void MainWindow::dropEvent(QDropEvent* event) {
 
 void MainWindow::onSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected) {
 
-    auto indexes = ui->TraceView->selectionModel()->selectedRows();
+    auto rows = ui->TraceView->selectionModel()->selectedRows();
     BCDatabase* db = this->session.database.get();
     BCCodeProviderRegistry* prov_reg = this->session.provider_registry.get();
 
-    if (indexes.size() >= 1) {
+    if (rows.size() >= 1) {
 
         ui->CodeView->clear();
         QList<QString> code;
 
         if (prov_reg != nullptr) {
 
-            for (const QModelIndex& index : indexes) {
+            for (const QModelIndex& index : rows) {
 
                 BCObjectId id((quint64)index.data(Qt::UserRole).toULongLong());
                 BCObject* object = db->store.get(id);
@@ -150,8 +152,8 @@ void MainWindow::onSelectionChanged(const QItemSelection& selected, const QItemS
 
         }
 
-        if (selected.size() == 1) {
-            BCObjectId id((quint64)indexes.first().data(Qt::UserRole).toULongLong());
+        if (rows.size() == 1) {
+            BCObjectId id((quint64)rows.first().data(Qt::UserRole).toULongLong());
             BCObject* object = db->store.get(id);
             object->dispatch_details(*session.details_view);
         }

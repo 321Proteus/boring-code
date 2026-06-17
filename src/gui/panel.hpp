@@ -162,7 +162,13 @@ private slots:
             });
             found = std::move(filtered);
         } else {
-            found = model->match(model->index(0, 0), Qt::DisplayRole, query, -1, Qt::MatchContains);
+
+            for (int col=0;col<model->columnCount();col++) {
+                QModelIndex start = model->index(0, col);
+                QModelIndexList col_matches = model->match(start, Qt::DisplayRole, query, -1, Qt::MatchContains | Qt::MatchWrap);
+                found.append(col_matches);
+            }
+
         }
 
         int count = found.size();

@@ -13,7 +13,13 @@ public:
         : QAbstractListModel(parent), entries(entries) {}
         
     int rowCount(const QModelIndex& parent = QModelIndex()) const override {
+        if (parent.isValid()) return 0;
         return entries->size();
+    }
+
+    int columnCount(const QModelIndex& parent = QModelIndex()) const override {
+        if (parent.isValid()) return 0;
+        return 2;
     }
 
     QVariant data(const QModelIndex& index, int role) const override {
@@ -22,7 +28,10 @@ public:
 
         const BCTraceEntry& e = entries->at(index.row());
 
-        if (role == Qt::DisplayRole) return QString::fromStdString(e.name);
+        if (role == Qt::DisplayRole) {
+            if (index.column() == 0) return QString::fromStdString(e.name);
+            else if (index.column() == 1) return QString::fromStdString(e.module);
+        }
         if (role == Qt::UserRole) return QVariant((quint64)e.id.raw);
 
         return {};
