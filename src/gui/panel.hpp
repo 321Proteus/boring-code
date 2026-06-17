@@ -128,12 +128,21 @@ public:
 
 private slots:
     void toggleSearchBar() {
+
         if (m_searchBar->isVisible()) {
             m_searchBar->hide();
             m_searchBar->searchEdit->clearFocus();
+
+            MatchScrollBar* bar = new MatchScrollBar(view);
+            bar->setMatches({}, 0);
+            view->setVerticalScrollBar(bar);
         } else {
             m_searchBar->show();
             m_searchBar->searchEdit->setFocus();
+
+            MatchScrollBar* bar = new MatchScrollBar(view);
+            bar->setMatches(lastMatches, view->model()->rowCount());
+            view->setVerticalScrollBar(bar);           
         }
     }
 
