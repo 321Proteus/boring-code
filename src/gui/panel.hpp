@@ -12,6 +12,7 @@
 #include <QScrollBar>
 #include <algorithm>
 #include <QElapsedTimer>
+#include <QPushButton>
 #include <qevent.h>
 
 class SearchBarWidget : public QWidget {
@@ -20,21 +21,31 @@ public:
     explicit SearchBarWidget(QWidget* parent = nullptr) : QWidget(parent) {
 
         setAttribute(Qt::WA_StyledBackground, true);
-        setStyleSheet("SearchBarWidget { background-color: lightgray; border-radius: 4px 4px 0px 0px; }");
+        setStyleSheet(" \
+            SearchBarWidget { background-color: lightgray; border-radius: 4px 4px 0px 0px; } \
+            QPushButton { padding: 3 5px; } \
+        ");
 
         searchEdit = new QLineEdit(this);
         matchLabel = new QLabel(this);
         matchLabel->setText("0");
 
+        prevButton = new QPushButton("Prev", this);
+        nextButton = new QPushButton("Next", this);
+
         QHBoxLayout* layout = new QHBoxLayout(this);
         layout->addWidget(searchEdit);
         layout->addWidget(matchLabel);
+        layout->addWidget(prevButton);
+        layout->addWidget(nextButton);
 
         this->setFixedHeight(30);
         this->setVisible(false);
 
     }
 
+    QPushButton* prevButton;
+    QPushButton* nextButton;
     QLineEdit* searchEdit;
     QLabel* matchLabel;
 
@@ -109,6 +120,14 @@ public:
         
         connect(m_searchBar->searchEdit, &QLineEdit::textChanged, this, &PanelWidget::search);
 
+        this->scrollbar = new MatchScrollBar;
+        view->setVerticalScrollBar(this->scrollbar);
+
+        currentMatch = 0;
+        
+        connect(m_searchBar->prevButton, &QPushButton::clicked, this, &PanelWidget::searchPrev);
+        connect(m_searchBar->nextButton, &QPushButton::clicked, this, &PanelWidget::searchNext);
+
     };
 
     void paintEvent(QPaintEvent* event) override {
@@ -132,17 +151,11 @@ private slots:
         if (m_searchBar->isVisible()) {
             m_searchBar->hide();
             m_searchBar->searchEdit->clearFocus();
-
-            MatchScrollBar* bar = new MatchScrollBar(view);
-            bar->setMatches({}, 0);
-            view->setVerticalScrollBar(bar);
+            scrollbar->setMatches({}, 0);
         } else {
             m_searchBar->show();
             m_searchBar->searchEdit->setFocus();
-
-            MatchScrollBar* bar = new MatchScrollBar(view);
-            bar->setMatches(lastMatches, view->model()->rowCount());
-            view->setVerticalScrollBar(bar);           
+            scrollbar->setMatches(lastMatches, view->model()->rowCount());
         }
     }
 
@@ -183,12 +196,12 @@ private slots:
         int count = found.size();
         m_searchBar->matchLabel->setText(found.size() ? QString::number(found.size()) : "Not found");
 
-        MatchScrollBar* bar = new MatchScrollBar(view);
-        bar->setMatches(found, model->rowCount());
-        view->setVerticalScrollBar(bar);
+        scrollbar->setMatches(found, model->rowCount());
 
         lastQuery = query;
         lastMatches = found;
+
+        select(0);
 
         view->setUpdatesEnabled(true);
         view->selectionModel()->blockSignals(false);
@@ -198,13 +211,30 @@ private slots:
 private:
     QString lastQuery;
     QModelIndexList lastMatches;
+    MatchScrollBar* scrollbar;
 
-    // void searchNext();
-    // void searchPrev();
+    void searchNext() {
+        currentMatch = (currentMatch + 1) % lastMatches.size();
+        select(currentMatch);
+    }
+    void searchPrev() {
+        currentMatch = (currentMatch - 1 + lastMatches.size()) % lastMatches.size();
+        select(currentMatch);
+    }
 
-private:
+    void select(int matchIndex) {
+        if (lastMatches.empty()) return;
+
+        QModelIndex idx = lastMatches[matchIndex];
+        view->scrollTo(idx, QAbstractItemView::PositionAtCenter);
+        view->selectionModel()->clearSelection();
+        view->selectionModel()->select(idx, QItemSelectionModel::Select | QItemSelectionModel::Rows);
+        m_searchBar->matchLabel->setText(QString("%1/%2").arg(matchIndex+1).arg(lastMatches.size()));
+    }
+
     QAbstractItemView* view;
     SearchBarWidget* m_searchBar;
+    int currentMatch;
 };
 
 class TracePanel : public PanelWidget {
