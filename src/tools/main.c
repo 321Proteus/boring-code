@@ -26,15 +26,13 @@ static void*            write_lock;
 static file_t           out_file;
 static file_t           log_file;
 
-static app_pc           main_mod_start = NULL;
-static app_pc           main_mod_end = NULL;
-
 static volatile int     trace_size = 0;
 static int              max_trace_size = 0; 
 static volatile int     limit_reached = false;
 static volatile int     thread_exit = false;
 
-static bool             no_syscalls = false;
+static bool             copy_modules = false;
+static char            module_path[128];
 
 static void flush_buf_part(void* drcontext) {
 
@@ -113,6 +111,31 @@ static void event_thread_exit(void* drcontext) {
     
 }
 
+static void copy_module(int id, const char* name, const char* path) {
+
+    char filename[256];
+    snprintf(filename, sizeof(filename), "%s/%04d_%s", module_path, id, name);
+
+    file_t src = dr_open_file(path, DR_FILE_READ);
+    if (src == INVALID_FILE) return;
+
+    file_t dst = dr_open_file(filename, DR_FILE_WRITE_REQUIRE_NEW);
+    if (dst == INVALID_FILE) {
+        dr_close_file(src);
+        return;
+    }
+
+    char buf[4096];
+    ssize_t bytes_read = 0;
+    while ((bytes_read = dr_read_file(src, buf, sizeof(buf))) > 0) {
+        dr_write_file(dst, buf, bytes_read);
+    }
+
+    dr_close_file(src);
+    dr_close_file(dst);
+
+}
+
 static void event_module_load(void *drcontext, const module_data_t *info, char loaded) {
 
     const char* name = dr_module_preferred_name(info);
@@ -122,6 +145,8 @@ static void event_module_load(void *drcontext, const module_data_t *info, char l
     size_t total_size = offsetof(bc_module_trace_t, strings) + name_size + path_size;
 
     bc_module_trace_t* mod = (bc_module_trace_t*)dr_global_alloc(total_size);
+
+    if (copy_modules) copy_module(module_count, name, path);
 
     mod->module_id = module_count++;
     mod->start = (uintptr_t)info->start;
@@ -278,19 +303,19 @@ DR_EXPORT void dr_client_main(client_id_t id, int argc, const char* argv[])
 #endif
 
     bool custom_name = false;
-    char fname[64];
+    char trace_name[64];
     Header hdr;
 
     for (int i=0;i<argc;i++) {
         if (strcmp(argv[i], "-o") == 0 && i != argc - 1) {
             custom_name = true;
-            sprintf(fname, "%s", argv[i+1]);
+            sprintf(trace_name, "%s", argv[i+1]);
         }
         if (strcmp(argv[i], "-n") == 0 && i != argc - 1) {
             max_trace_size = strtol(argv[i+1], NULL, 10);
         }
-        if (strcmp(argv[i], "--no-syscalls") == 0) {
-            no_syscalls = true;
+        if (strcmp(argv[i], "-c") == 0) {
+            copy_modules = true;
         }
     }
 
@@ -324,15 +349,12 @@ DR_EXPORT void dr_client_main(client_id_t id, int argc, const char* argv[])
 
         char buf[256];
         int l = dr_snprintf(buf, sizeof(buf),
-        "Starting analysis of target \"%s\"\nArgs: max_trace_size=%llu, no_syscalls=%s\n", path, max_trace_size, (no_syscalls ? "true" : "false"));
+        "Starting analysis of target \"%s\"\nArgs: max_trace_size=%llu, copy_modules=%s\n", path, max_trace_size, (copy_modules ? "true" : "false"));
         dr_write_file(log_file, buf, l);
 
         hdr = create_header(path);
 
-        main_mod_start = main_mod->start;
-        main_mod_end = main_mod->end;
-
-        if (!custom_name) sprintf(fname, "bctrace_%X.bin", hdr.hash);
+        if (!custom_name) sprintf(trace_name, "bctrace_%X.bin", hdr.hash);
 
     } else {
 
@@ -342,13 +364,18 @@ DR_EXPORT void dr_client_main(client_id_t id, int argc, const char* argv[])
             The checksum has been set to the default value.";
         dr_write_file(log_file, warning, strlen(warning));
 
-        if (!custom_name) sprintf(fname, "bctrace.bin");
+        if (!custom_name) sprintf(trace_name, "bctrace.bin");
 
     }
 
     dr_free_module_data(main_mod);
 
-    out_file = dr_open_file(fname, DR_FILE_WRITE_OVERWRITE | DR_FILE_ALLOW_LARGE);
+    if (copy_modules) {
+        dr_snprintf(module_path, sizeof(module_path), "%s.modules", trace_name);
+        dr_create_dir(module_path);
+    }
+
+    out_file = dr_open_file(trace_name, DR_FILE_WRITE_OVERWRITE | DR_FILE_ALLOW_LARGE);
 
     dr_write_file(out_file, &hdr, sizeof(Header));
 
