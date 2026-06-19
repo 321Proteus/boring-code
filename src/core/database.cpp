@@ -137,6 +137,7 @@ BCInsertionResult BCObjectStore::insert_module(uint32_t index, BCAddr start, BCA
     if (index < modules_.size()) return { id, false };
 
     std::unique_ptr<BCModule> obj = std::make_unique<BCModule>(start, end, name, path);
+    obj->index = index;
     
     auto pos = std::lower_bound(
     modules_.begin(), modules_.end(), start,

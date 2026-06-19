@@ -114,6 +114,7 @@ struct BCLoopInstance {
 };
 
 struct BCModule {
+    uint32_t index;
     BCAddr start;
     BCAddr end;
     std::string path;
