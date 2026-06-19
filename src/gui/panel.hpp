@@ -201,7 +201,8 @@ private slots:
         lastQuery = query;
         lastMatches = found;
 
-        select(0);
+        currentMatch = 0;
+        select();
 
         view->setUpdatesEnabled(true);
         view->selectionModel()->blockSignals(false);
@@ -215,21 +216,22 @@ private:
 
     void searchNext() {
         currentMatch = (currentMatch + 1) % lastMatches.size();
-        select(currentMatch);
+        select();
     }
+    
     void searchPrev() {
         currentMatch = (currentMatch - 1 + lastMatches.size()) % lastMatches.size();
-        select(currentMatch);
+        select();
     }
 
-    void select(int matchIndex) {
+    void select() {
         if (lastMatches.empty()) return;
 
-        QModelIndex idx = lastMatches[matchIndex];
+        QModelIndex idx = lastMatches[currentMatch];
         view->scrollTo(idx, QAbstractItemView::PositionAtCenter);
         view->selectionModel()->clearSelection();
         view->selectionModel()->select(idx, QItemSelectionModel::Select | QItemSelectionModel::Rows);
-        m_searchBar->matchLabel->setText(QString("%1/%2").arg(matchIndex+1).arg(lastMatches.size()));
+        m_searchBar->matchLabel->setText(QString("%1/%2").arg(currentMatch+1).arg(lastMatches.size()));
     }
 
     QAbstractItemView* view;
