@@ -58,7 +58,7 @@ public:
 
         database = std::make_unique<BCDatabase>(load_database(path, sv));
         this->checksum = database->crc_hash;
-        provider_registry = std::make_unique<BCCodeProviderRegistry>(resolve_modules(*database, sv));
+        provider_registry = std::make_unique<BCCodeProviderRegistry>(resolve_modules(path, *database, sv));
         
     }
 

@@ -308,4 +308,4 @@ public:
 
 };
 
-BCCodeProviderRegistry resolve_modules(BCDatabase& db, BCStatusViewModel& sv);
+BCCodeProviderRegistry resolve_modules(const std::string& path, BCDatabase& db, BCStatusViewModel& sv);

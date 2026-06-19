@@ -1,6 +1,8 @@
 #include "direct.hpp"
 #include "core/loader.hpp"
 #include <cstdint>
+#include <cstdio>
+#include <filesystem>
 #include <stdexcept>
 
 #ifndef _WIN32
@@ -59,21 +61,38 @@ MappedFile::~MappedFile() {
 
 #endif
 
-BCCodeProviderRegistry resolve_modules(BCDatabase& db, BCStatusViewModel& sv) {
+BCCodeProviderRegistry resolve_modules(const std::string& path, BCDatabase& db, BCStatusViewModel& sv) {
     BCCodeProviderRegistry registry;
 
     sv.setup_job("Resolving modules", db.store.modules().size());
     int mr_progress = 0;
 
+    std::filesystem::path p(path);
+    std::string dirname = p.filename(); dirname += ".modules";
+    std::filesystem::path mod_dir = p.parent_path() / dirname;
+    printf("Freaky path: %s\n", mod_dir.c_str());
+
     for (const auto& mod : db.store.modules()) {
-        BCFileType type = detect_type(mod->path);
-        if (type == BCFileType::UNKNOWN) {
-            printf("Failed to register module %s (not a module)\n", mod->path.c_str());
-            continue;
+
+        char buf[128];
+        sprintf(buf, "%04d_%s", mod->index, mod->name.c_str());
+        std::string target_path = mod_dir / std::string(buf);
+
+        if (!std::filesystem::exists(target_path)) {
+            printf("Warning: Module %s not found in the modules directory, falling back to loading from OS path %s\n",
+                mod->name.c_str(), mod->path.c_str()
+            );
+            target_path = mod->path;
+            if (!std::filesystem::exists(target_path)) {
+                printf("Failed to register module %s (not found)\n", mod->name.c_str());
+                continue;
+            }
         }
 
         try {
-            std::shared_ptr<MappedFile> file = std::make_shared<MappedFile>(mod->path);
+            BCFileType type = detect_type(target_path);
+
+            std::shared_ptr<MappedFile> file = std::make_shared<MappedFile>(target_path);
             std::unique_ptr<DirectCodeProvider> provider = std::make_unique<DirectCodeProvider>(file, mod->start, mod->end);
 
             if (type == BCFileType::PE)         provider->parse_pe();
@@ -82,7 +101,7 @@ BCCodeProviderRegistry resolve_modules(BCDatabase& db, BCStatusViewModel& sv) {
             provider->init_cs_handler();
 
             registry.register_provider(*mod, std::move(provider));
-            printf("Successfully registered module %s\n", mod->path.c_str());
+            printf("Successfully registered module %s\n", mod->name.c_str());
 
         } catch (const std::runtime_error& e) {
             printf("Failed to register module %s\n", e.what());
